@@ -45,7 +45,8 @@ function ResultCard({ result }: { result: SlotResult }) {
   const rows = [
     { label: '通常倍率', value: result.normal },
     { label: '必殺倍率', value: result.ultimate },
-    { label: 'パッシブ1倍率', value: result.passive },
+    { label: 'パッシブ1倍率', value: result.passive1 },
+    { label: 'パッシブ2倍率', value: result.passive2 },
   ]
 
   return (

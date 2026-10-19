@@ -135,9 +135,9 @@ export function CharacterSlot({
         <SkillRow
           id={`${idPrefix}-passive`}
           label="パッシブ1Lv"
-          value={slot.passiveLv}
+          value={slot.passive1Lv}
           disabled={disabled}
-          onChange={(v) => onChange({ passiveLv: v })}
+          onChange={(v) => onChange({ passive1Lv: v })}
           target={
             character ? (
               <div className="flex min-w-0 items-center gap-1.5">
@@ -147,8 +147,37 @@ export function CharacterSlot({
                 </label>
                 <select
                   id={`${idPrefix}-passive-target`}
-                  value={slot.passiveTarget}
-                  onChange={(e) => onChange({ passiveTarget: Number(e.target.value) })}
+                  value={slot.passive1Target}
+                  onChange={(e) => onChange({ passive1Target: Number(e.target.value) })}
+                  className={`${fieldClass} min-w-0`}
+                >
+                  {memberOptions.map((m) => (
+                    <option key={m.slotIndex} value={m.slotIndex}>
+                      {m.slotIndex === index ? '自' : m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null
+          }
+        />
+        <SkillRow
+          id={`${idPrefix}-passive2`}
+          label="パッシブ2Lv"
+          value={slot.passive2Lv}
+          disabled={disabled}
+          onChange={(v) => onChange({ passive2Lv: v })}
+          target={
+            character ? (
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span className="shrink-0 text-xs text-muted-foreground">{'自 ⇒'}</span>
+                <label htmlFor={`${idPrefix}-passive2-target`} className="sr-only">
+                  パッシブ2バフ対象
+                </label>
+                <select
+                  id={`${idPrefix}-passive2-target`}
+                  value={slot.passive2Target}
+                  onChange={(e) => onChange({ passive2Target: Number(e.target.value) })}
                   className={`${fieldClass} min-w-0`}
                 >
                   {memberOptions.map((m) => (

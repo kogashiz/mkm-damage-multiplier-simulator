@@ -19,10 +19,16 @@ export type Character = {
   /** 攻撃力に対するダメージ係数（Lv1 の値 + Lvごとの上昇量） */
   normal: { base: number; perLevel: number }
   ultimate: { base: number; perLevel: number }
-  passive: {
+  passive1: {
     base: number
     perLevel: number
     /** 対象に付与する攻撃力バフ（Lv1の値 + Lvごとの上昇量、割合） */
+    buffBase: number
+    buffPerLevel: number
+  }
+  passive2: {
+    base: number
+    perLevel: number
     buffBase: number
     buffPerLevel: number
   }
@@ -40,7 +46,8 @@ export const CHARACTERS: Character[] = [
     defaultAtk: 100,
     normal: { base: 1.2, perLevel: 0.12 },
     ultimate: { base: 4.5, perLevel: 0.45 },
-    passive: { base: 0.8, perLevel: 0.08, buffBase: 0.1, buffPerLevel: 0.02 },
+    passive1: { base: 0.8, perLevel: 0.08, buffBase: 0.1, buffPerLevel: 0.02 },
+    passive2: { base: 0.8, perLevel: 0.08, buffBase: 0.1, buffPerLevel: 0.02 },
   },
   {
     id: 'nox',
@@ -50,7 +57,8 @@ export const CHARACTERS: Character[] = [
     defaultAtk: 100,
     normal: { base: 1.35, perLevel: 0.135 },
     ultimate: { base: 5.2, perLevel: 0.52 },
-    passive: { base: 1.0, perLevel: 0.1, buffBase: 0.08, buffPerLevel: 0.015 },
+    passive1: { base: 1.0, perLevel: 0.1, buffBase: 0.08, buffPerLevel: 0.015 },
+    passive2: { base: 1.0, perLevel: 0.1, buffBase: 0.08, buffPerLevel: 0.015 },
   },
   {
     id: 'yao',
@@ -60,7 +68,8 @@ export const CHARACTERS: Character[] = [
     defaultAtk: 100,
     normal: { base: 1.1, perLevel: 0.11 },
     ultimate: { base: 6.0, perLevel: 0.6 },
-    passive: { base: 0.6, perLevel: 0.06, buffBase: 0.12, buffPerLevel: 0.02 },
+    passive1: { base: 0.6, perLevel: 0.06, buffBase: 0.12, buffPerLevel: 0.02 },
+    passive2: { base: 0.6, perLevel: 0.06, buffBase: 0.12, buffPerLevel: 0.02 },
   },
   {
     id: 'raven',
@@ -70,7 +79,8 @@ export const CHARACTERS: Character[] = [
     defaultAtk: 100,
     normal: { base: 1.5, perLevel: 0.15 },
     ultimate: { base: 4.8, perLevel: 0.48 },
-    passive: { base: 1.2, perLevel: 0.12, buffBase: 0.05, buffPerLevel: 0.01 },
+    passive1: { base: 1.2, perLevel: 0.12, buffBase: 0.05, buffPerLevel: 0.01 },
+    passive2: { base: 1.2, perLevel: 0.12, buffBase: 0.05, buffPerLevel: 0.01 },
   },
   {
     id: 'shade',
@@ -80,7 +90,8 @@ export const CHARACTERS: Character[] = [
     defaultAtk: 100,
     normal: { base: 1.25, perLevel: 0.125 },
     ultimate: { base: 5.5, perLevel: 0.55 },
-    passive: { base: 0.9, perLevel: 0.09, buffBase: 0.15, buffPerLevel: 0.025 },
+    passive1: { base: 0.9, perLevel: 0.09, buffBase: 0.15, buffPerLevel: 0.025 },
+    passive2: { base: 0.9, perLevel: 0.09, buffBase: 0.15, buffPerLevel: 0.025 },
   },
   {
     id: 'brute',
@@ -90,7 +101,8 @@ export const CHARACTERS: Character[] = [
     defaultAtk: 100,
     normal: { base: 0.9, perLevel: 0.09 },
     ultimate: { base: 3.0, perLevel: 0.3 },
-    passive: { base: 0.5, perLevel: 0.05, buffBase: 0.2, buffPerLevel: 0.03 },
+    passive1: { base: 0.5, perLevel: 0.05, buffBase: 0.2, buffPerLevel: 0.03 },
+    passive2: { base: 0.5, perLevel: 0.05, buffBase: 0.2, buffPerLevel: 0.03 },
   },
   {
     id: 'mira',
@@ -100,7 +112,8 @@ export const CHARACTERS: Character[] = [
     defaultAtk: 100,
     normal: { base: 1.0, perLevel: 0.1 },
     ultimate: { base: 3.6, perLevel: 0.36 },
-    passive: { base: 0.7, perLevel: 0.07, buffBase: 0.18, buffPerLevel: 0.02 },
+    passive1: { base: 0.7, perLevel: 0.07, buffBase: 0.18, buffPerLevel: 0.02 },
+    passive2: { base: 0.7, perLevel: 0.07, buffBase: 0.18, buffPerLevel: 0.02 },
   },
 ]
 

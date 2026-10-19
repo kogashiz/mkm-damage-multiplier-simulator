@@ -5,9 +5,11 @@ export type SlotState = {
   atk: string
   normalLv: number
   ultimateLv: number
-  passiveLv: number
+  passive1Lv: number
+  passive2Lv: number
   /** パッシブバフの対象スロット番号（自分自身を含む） */
-  passiveTarget: number
+  passive1Target: number
+  passive2Target: number
 }
 
 export type SlotResult = {
@@ -18,7 +20,8 @@ export type SlotResult = {
   effectiveAtk: number
   normal: number
   ultimate: number
-  passive: number
+  passive1: number
+  passive2: number
 }
 
 export const SLOT_COUNT = 6
@@ -29,8 +32,10 @@ export function createEmptySlot(slotIndex: number): SlotState {
     atk: '',
     normalLv: 1,
     ultimateLv: 1,
-    passiveLv: 1,
-    passiveTarget: slotIndex,
+    passive1Lv: 1,
+    passive2Lv: 1,
+    passive1Target: slotIndex,
+    passive2Target: slotIndex,
   }
 }
 
@@ -42,8 +47,10 @@ export function calculateParty(slots: SlotState[]): SlotResult[] {
   slots.forEach((slot, index) => {
     const character = slot.characterId ? CHARACTER_MAP[slot.characterId] : null
     if (!character) return
-    const target = slots[slot.passiveTarget]?.characterId ? slot.passiveTarget : index
-    buffs[target] += coefAt(character.passive.buffBase, character.passive.buffPerLevel, slot.passiveLv)
+    const passive1Target = slots[slot.passive1Target]?.characterId ? slot.passive1Target : index
+    const passive2Target = slots[slot.passive2Target]?.characterId ? slot.passive2Target : index
+    buffs[passive1Target] += coefAt(character.passive1.buffBase, character.passive1.buffPerLevel, slot.passive1Lv)
+    buffs[passive2Target] += coefAt(character.passive2.buffBase, character.passive2.buffPerLevel, slot.passive2Lv)
   })
 
   return slots.flatMap((slot, index) => {
@@ -60,7 +67,8 @@ export function calculateParty(slots: SlotState[]): SlotResult[] {
         effectiveAtk: atk * amp,
         normal: coefAt(character.normal.base, character.normal.perLevel, slot.normalLv) * amp,
         ultimate: coefAt(character.ultimate.base, character.ultimate.perLevel, slot.ultimateLv) * amp,
-        passive: coefAt(character.passive.base, character.passive.perLevel, slot.passiveLv) * amp,
+        passive1: coefAt(character.passive1.base, character.passive1.perLevel, slot.passive1Lv) * amp,
+        passive2: coefAt(character.passive2.base, character.passive2.perLevel, slot.passive2Lv) * amp,
       },
     ]
   })

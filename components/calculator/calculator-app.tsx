@@ -10,8 +10,8 @@ import { ResultView } from './result-view'
 
 function createInitialSlots(): SlotState[] {
   const slots = Array.from({ length: SLOT_COUNT }, (_, i) => createEmptySlot(i))
-  slots[0] = { characterId: 'zoya', atk: '100', normalLv: 3, ultimateLv: 3, passiveLv: 3, passiveTarget: 1 }
-  slots[1] = { characterId: 'nox', atk: '100', normalLv: 3, ultimateLv: 3, passiveLv: 3, passiveTarget: 1 }
+  slots[0] = { characterId: 'zoya', atk: '100', normalLv: 3, ultimateLv: 3, passive1Lv: 3, passive2Lv: 3, passive1Target: 1, passive2Target: 1 }
+  slots[1] = { characterId: 'nox', atk: '100', normalLv: 3, ultimateLv: 3, passive1Lv: 3, passive2Lv: 3, passive1Target: 1, passive2Target: 1 }
   return slots
 }
 
@@ -37,7 +37,8 @@ export function CalculatorApp() {
               ...s,
               characterId,
               atk: s.characterId ? s.atk : String(character.defaultAtk),
-              passiveTarget: s.characterId ? s.passiveTarget : i,
+              passive1Target: s.characterId ? s.passive1Target : i,
+              passive2Target: s.characterId ? s.passive2Target : i,
             }
           : s,
       ),
@@ -49,7 +50,13 @@ export function CalculatorApp() {
     setSlots((prev) =>
       prev.map((s, i) => {
         if (i === index) return createEmptySlot(i)
-        if (s.passiveTarget === index) return { ...s, passiveTarget: i }
+        if (s.passive1Target === index || s.passive2Target === index) {
+          return {
+            ...s,
+            passive1Target: s.passive1Target === index ? i : s.passive1Target,
+            passive2Target: s.passive2Target === index ? i : s.passive2Target,
+          }
+        }
         return s
       }),
     )

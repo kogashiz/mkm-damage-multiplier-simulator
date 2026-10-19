@@ -1,4 +1,4 @@
-import { ATTACK_TYPE, EFFECT_TYPE, toRatio, createBuffMod } from './Constants.js';
+import { ATTACK_TYPE, EFFECT_TYPE, toRatio, createBuffMod } from './constants.js';
 import { Convict } from './Convict.js';
 
 /**

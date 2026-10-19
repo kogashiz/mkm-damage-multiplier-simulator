@@ -1,4 +1,4 @@
-import { ATTACK_TYPE, EFFECT_TYPE } from './Constants.js';
+import { ATTACK_TYPE, EFFECT_TYPE } from './constants.js';
 
 // 基底クラス（まだあるとよくなるプログラムの流れがわかってない）
 export class Convict {
