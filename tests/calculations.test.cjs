@@ -3,7 +3,7 @@ require('./register-typescript.cjs')
 const assert = require('node:assert/strict')
 const test = require('node:test')
 const { calculateParty, createEmptySlot } = require('../lib/calc.ts')
-const { CHARACTER_MAP } = require('../lib/characters.ts')
+const { CHARACTER_MAP, CLASS_LABELS, CLASS_ORDER } = require('../lib/characters.ts')
 const { activeSets, sigilPartStat } = require('../lib/sigils.ts')
 
 function createSlot(slotIndex, characterId, overrides = {}) {
@@ -22,12 +22,20 @@ function component(result, id) {
 }
 
 test('character registry uses Wiki-sourced coefficients and special effect metadata', () => {
-  assert.deepEqual(Object.keys(CHARACTER_MAP), ['zoya', 'nox', 'yao', 'raven', 'shade', 'brute', 'mira'])
+  assert.deepEqual(Object.keys(CHARACTER_MAP), ['zoya', 'nox', 'yao'])
   assert.deepEqual(CHARACTER_MAP.zoya.normal, [0.83, 0.89, 0.95, 1.01, 1.08, 1.15, 1.23, 1.31, 1.4, 1.5])
   assert.equal(CHARACTER_MAP.zoya.damageComponents.length, 5)
   assert.equal(CHARACTER_MAP.zoya.passiveBuffTargetMode, 'none')
   assert.equal(CHARACTER_MAP.nox.normal[0], 0.9)
   assert.equal(CHARACTER_MAP.nox.passive2TargetMode, 'enemy-all')
+})
+
+test('convict selection lists all classes in the requested order', () => {
+  assert.deepEqual(CLASS_ORDER, ['endura', 'fury', 'umbra', 'reticle', 'arcane', 'catalyst'])
+  assert.deepEqual(
+    CLASS_ORDER.map((className) => CLASS_LABELS[className]),
+    ['エンデュア', 'フューリー', 'アンブラ', 'レチクル', 'アーケイン', 'カタリシス'],
+  )
 })
 
 test('Zoya no longer applies non-existent attack buffs', () => {

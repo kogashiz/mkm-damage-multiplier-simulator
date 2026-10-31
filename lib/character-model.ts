@@ -5,15 +5,25 @@ import {
   type DamageComponent,
 } from './damage-model'
 
-export type CharacterClass = 'fury' | 'umbra' | 'endura'
+export type CharacterClass = 'endura' | 'fury' | 'umbra' | 'reticle' | 'arcane' | 'catalyst'
 
 export const CLASS_LABELS: Record<CharacterClass, string> = {
+  endura: 'エンデュア',
   fury: 'フューリー',
   umbra: 'アンブラ',
-  endura: 'エンデュア',
+  reticle: 'レチクル',
+  arcane: 'アーケイン',
+  catalyst: 'カタリシス',
 }
 
-export const CLASS_ORDER: CharacterClass[] = ['fury', 'umbra', 'endura']
+export const CLASS_ORDER: CharacterClass[] = [
+  'endura',
+  'fury',
+  'umbra',
+  'reticle',
+  'arcane',
+  'catalyst',
+]
 
 export const MAX_SKILL_LEVEL = 10
 export const MAX_SHACKLE = 5

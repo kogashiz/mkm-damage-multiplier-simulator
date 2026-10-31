@@ -19,7 +19,7 @@ export function CharacterSelectModal({
   onClose: () => void
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
-  const [activeClass, setActiveClass] = useState<CharacterClass>('fury')
+  const [activeClass, setActiveClass] = useState<CharacterClass>('endura')
 
   useEffect(() => {
     const dialog = dialogRef.current
