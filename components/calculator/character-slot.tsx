@@ -6,6 +6,7 @@ import { Info, Plus, RefreshCw, X } from 'lucide-react'
 import {
   CHARACTER_MAP,
   CLASS_LABELS,
+  MAX_EXCLUSIVE_LEVEL,
   MAX_SHACKLE,
   MAX_SKILL_LEVEL,
   type BuffTargetMode,
@@ -219,8 +220,8 @@ function FilledSlot({
             <NumberSelect
               id={`${idPrefix}-exclusive`}
               value={slot.exclusiveLv}
-              options={range(0, character.exclusiveMaxLevel)}
-              format={(v) => (v === 0 ? '—' : String(v))}
+              options={range(0, MAX_EXCLUSIVE_LEVEL)}
+              format={(v) => (v === 0 ? '未開放' : `レベル${v}`)}
               onChange={(v) => onChange({ exclusiveLv: v })}
             />
           </LabeledField>
@@ -379,7 +380,13 @@ function FilledSlot({
       </div>
 
       <InfoModal open={infoOpen} onClose={() => setInfoOpen(false)} character={character} slot={slot} />
-      <SigilSetModal open={setInfoOpen2} onClose={() => setSetInfoOpen(false)} sigils={slot.sigils} />
+      <SigilSetModal
+        open={setInfoOpen2}
+        onClose={() => setSetInfoOpen(false)}
+        sigils={slot.sigils}
+        riftStacks={slot.riftStacks}
+        onRiftStacksChange={(riftStacks) => onChange({ riftStacks })}
+      />
       <SigilSelectModal
         part={sigilPart}
         current={sigilPart === null ? null : slot.sigils[sigilPart].setId}

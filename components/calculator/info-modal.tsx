@@ -95,11 +95,16 @@ export function InfoModal({
           </ol>
         </InfoSection>
 
-        <InfoSection title="専属刻印" badge={slot.exclusiveLv > 0 ? `Lv${slot.exclusiveLv}` : '未所持'}>
+        <InfoSection title="専属刻印" badge={slot.exclusiveLv > 0 ? `Lv${slot.exclusiveLv}` : '未開放'}>
           <span className={slot.exclusiveLv > 0 ? '' : 'text-muted-foreground'}>
             <Templated
               text={exclusive.text}
-              values={{ v: formatPct(coefAt(exclusive.base, exclusive.perLevel, Math.max(1, slot.exclusiveLv))) }}
+              values={{
+                v: formatPct(
+                  exclusive.valuesByLevel?.[Math.max(1, slot.exclusiveLv) - 1] ??
+                    coefAt(exclusive.base, exclusive.perLevel, Math.max(1, slot.exclusiveLv)),
+                ),
+              }}
             />
           </span>
         </InfoSection>

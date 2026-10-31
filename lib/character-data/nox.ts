@@ -13,7 +13,6 @@ export const nox = defineCharacter({
   className: 'fury',
   image: '/characters/nox.png',
   defaultAtk: 100,
-  exclusiveMaxLevel: 3,
   normal: NORMAL_COEFFICIENTS,
   ultimate: ULTIMATE_COEFFICIENTS,
   ultimateName: '深淵の夜幕',
@@ -37,6 +36,7 @@ export const nox = defineCharacter({
   exclusive: {
     base: 0,
     perLevel: 0,
+    valuesByLevel: [0, 6, 7, 8],
   },
   rebuildUlts: ['永夜の顕現', '黒影の顕現'],
   damageComponents: [
@@ -87,6 +87,6 @@ export const nox = defineCharacter({
       { name: '枷共鳴 II', text: '通常攻撃ダメージが5%アップする。' },
     ],
     exclusiveText:
-      '必殺技発動時、周囲3×3マス範囲内の敵に物理ダメージとコアダメージ1を与える。専属刻印Lvに応じてダメージ係数が600%・700%・800%に上昇し、敵1体にダメージを与えるごとに必殺技終了まで被ダメージが10%ダウン（最大5回）する。',
+      '必殺技発動時、周囲3×3マス範囲内の敵に自身のATKの{v}の物理ダメージとコアダメージ1を与える。敵1体にダメージを与えるごとに必殺技終了まで被ダメージが10%ダウンする（最大5回）。',
   },
 })

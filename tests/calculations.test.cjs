@@ -4,6 +4,7 @@ const assert = require('node:assert/strict')
 const test = require('node:test')
 const { calculateParty, createEmptySlot } = require('../lib/calc.ts')
 const { CHARACTER_MAP } = require('../lib/characters.ts')
+const { activeSets, sigilPartStat } = require('../lib/sigils.ts')
 
 function createSlot(slotIndex, characterId, overrides = {}) {
   return {
@@ -37,16 +38,20 @@ test('Zoya no longer applies non-existent attack buffs', () => {
 test('sigil and rebuild modifiers feed attack, normal, and ultimate multipliers', () => {
   const zoya = createSlot(0, 'zoya', {
     madness: true,
-    sigils: [0, 1, 2].map(() => ({ setId: 'rift', lv: 1 })),
+    sigils: [
+      { setId: 'rift', lv: 1 },
+      { setId: 'rift', lv: 1 },
+      { setId: null, lv: 1 },
+    ],
     rebuild: ['s1', 'atk', 'phys', 'ultDmg', 'ultA'],
   })
   const [result] = calculateParty([zoya])
 
   assert.ok(Math.abs(result.effectiveAtk - 118.25) < 1e-10)
-  assert.ok(Math.abs(result.dmgBonus - 0.375) < 1e-10)
+  assert.ok(Math.abs(result.dmgBonus - 0.225) < 1e-10)
   assert.equal(result.ultimateName, '怒りの軍臨')
-  assert.ok(Math.abs(result.normal - 0.83 * 1.1825 * 1.375) < 1e-10)
-  assert.ok(Math.abs(result.ultimate - 5 * 1.1825 * 1.375 * 1.32) < 1e-10)
+  assert.ok(Math.abs(result.normal - 0.83 * 1.1825 * 1.225) < 1e-10)
+  assert.ok(Math.abs(result.ultimate - 5 * 1.1825 * 1.225 * 1.32) < 1e-10)
 })
 
 test('damage components apply enemy defense, Break, and minimum damage', () => {
@@ -92,4 +97,70 @@ test('NOX defeat stacks raise ATK, reduce enemy DEF, and calculate exclusive dam
   assert.equal(component(noxResult, 'normal').appliedDefense, 85)
   assert.equal(component(allyResult, 'normal').appliedDefense, 85)
   assert.equal(component(noxResult, 'exclusive-ultimate-damage').coefficientPerHit, 6)
+})
+
+test('exclusive engraving descriptions use the selected level values', () => {
+  assert.deepEqual(CHARACTER_MAP.zoya.exclusive.valuesByLevel, [0, 0.3, 0.35, 0.4])
+  assert.match(CHARACTER_MAP.zoya.exclusive.text, /\{v\}/)
+  assert.deepEqual(CHARACTER_MAP.nox.exclusive.valuesByLevel, [0, 6, 7, 8])
+  assert.match(CHARACTER_MAP.nox.exclusive.text, /\{v\}/)
+})
+
+test('crimebrand parts have set-specific level stats and set thresholds', () => {
+  assert.equal(sigilPartStat('embrace', 0, 1).value, 0.03)
+  assert.equal(sigilPartStat('embrace', 0, 10).value, 0.06)
+  assert.equal(sigilPartStat('rift', 1, 10).value, 0.2)
+  assert.equal(sigilPartStat('echo', 2, 10).value, 0.1)
+  assert.deepEqual(
+    activeSets([
+      { setId: 'rift' },
+      { setId: 'rift' },
+      { setId: 'echo' },
+    ]).map((set) => set.id),
+    ['rift', 'echo'],
+  )
+})
+
+test('Embrace increases damage only against core-broken enemies', () => {
+  const sigils = [0, 1, 2].map(() => ({ setId: 'embrace', lv: 1 }))
+  const zoya = createSlot(0, 'zoya', { sigils })
+  const [unbroken] = calculateParty([zoya])
+  const [broken] = calculateParty([zoya], {
+    def: 0,
+    mdf: 0,
+    isBreak: false,
+    isCoreBroken: true,
+  })
+
+  assert.ok(Math.abs(unbroken.normal - 0.83 * 1.06 * 1.05) < 1e-10)
+  assert.ok(Math.abs(broken.normal - 0.83 * 1.06 * 1.05 * 1.45) < 1e-10)
+})
+
+test('Rift stacks reduce enemy DEF for the whole party and Echo adds shown stats', () => {
+  const rift = createSlot(0, 'zoya', {
+    riftStacks: 3,
+    sigils: [
+      { setId: 'rift', lv: 1 },
+      { setId: 'rift', lv: 1 },
+      { setId: null, lv: 1 },
+    ],
+  })
+  const echo = createSlot(1, 'nox', {
+    sigils: [
+      { setId: null, lv: 1 },
+      { setId: null, lv: 1 },
+      { setId: 'echo', lv: 10 },
+    ],
+  })
+  const [riftResult, echoResult] = calculateParty([rift, echo], {
+    def: 100,
+    mdf: 0,
+    isBreak: false,
+    isCoreBroken: false,
+  })
+
+  assert.equal(component(riftResult, 'normal').appliedDefense, 73)
+  assert.equal(component(echoResult, 'normal').appliedDefense, 73)
+  assert.equal(echoResult.sigilStats.attackSpeedPct, 0.1)
+  assert.equal(echoResult.sigilStats.initialEnergy, 8)
 })

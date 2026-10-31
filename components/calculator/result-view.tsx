@@ -152,6 +152,25 @@ function ResultCard({ result }: { result: SlotResult }) {
           <dt className="text-xs text-muted-foreground">実効ATK</dt>
           <dd className="font-mono text-sm">{fmt(result.effectiveAtk)}</dd>
         </div>
+        {(result.sigilStats.atkPct > 0 ||
+          result.sigilStats.hpPct > 0 ||
+          result.sigilStats.attackSpeedPct > 0 ||
+          result.sigilStats.initialEnergy > 0) && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 py-3 text-xs text-muted-foreground">
+            {result.sigilStats.atkPct > 0 && (
+              <span>罪の刻印 ATK +{(result.sigilStats.atkPct * 100).toFixed(1)}%</span>
+            )}
+            {result.sigilStats.hpPct > 0 && (
+              <span>罪の刻印 HP +{(result.sigilStats.hpPct * 100).toFixed(1)}%</span>
+            )}
+            {result.sigilStats.attackSpeedPct > 0 && (
+              <span>罪の刻印 攻撃速度 +{(result.sigilStats.attackSpeedPct * 100).toFixed(1)}%</span>
+            )}
+            {result.sigilStats.initialEnergy > 0 && (
+              <span>開始時エネルギー +{result.sigilStats.initialEnergy}</span>
+            )}
+          </div>
+        )}
       </dl>
     </article>
   )

@@ -2,12 +2,12 @@ import Image from 'next/image'
 import { formatPct } from '@/lib/characters'
 import type { SigilSlot } from '@/lib/calc'
 import {
+  activeSets,
+  MAX_RIFT_STACKS,
   PART_OPTIONS,
-  PART_STATS,
   SIGIL_PARTS,
   SIGIL_SET_MAP,
-  activeSet,
-  sigilStatAt,
+  sigilPartStat,
   type SigilPart,
 } from '@/lib/sigils'
 import { ModalShell } from './modal-shell'
@@ -35,7 +35,7 @@ export function SigilSelectModal({
       {part !== null && (
         <div className="p-5">
           <p className="mb-4 text-xs text-muted-foreground">
-            {`メインステータス：${PART_STATS[part].label}　/　刻印を選択すると即時適用されます`}
+            {'刻印の部位別ステータスは、装着後にレベルに応じて適用されます。'}
           </p>
           <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {options.map((id) => {
@@ -95,28 +95,50 @@ export function SigilSetModal({
   open,
   onClose,
   sigils,
+  riftStacks,
+  onRiftStacksChange,
 }: {
   open: boolean
   onClose: () => void
   sigils: SigilSlot[]
+  riftStacks: number
+  onRiftStacksChange: (stacks: number) => void
 }) {
-  const set = activeSet(sigils)
+  const sets = activeSets(sigils)
 
   return (
     <ModalShell open={open} onClose={onClose} eyebrow="Sigil Effects" title="罪の刻印　効果" size="sm">
       <div className="flex flex-col gap-5 p-5 sm:p-6">
-        {set && (
-          <section className="border border-primary/60 bg-primary/10 p-4">
+        {sets.map((set) => (
+          <section key={set.id} className="border border-primary/60 bg-primary/10 p-4">
             <h3 className="font-bold">セット効果</h3>
-            <p className="mt-1 font-mono text-xs text-accent">{`${set.name}　I・II・III`}</p>
+            <p className="mt-1 font-mono text-xs text-accent">{set.name}</p>
             <p className="mt-2 text-sm leading-relaxed text-pretty">{set.setEffect.text}</p>
+            {set.id === 'rift' && (
+              <label className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
+                <span>現在のDEF低下スタック</span>
+                <select
+                  aria-label="魂の亀裂のDEF低下スタック"
+                  value={riftStacks}
+                  onChange={(event) => onRiftStacksChange(Number(event.target.value))}
+                  className="h-8 border border-accent/60 bg-input px-2 font-mono text-foreground"
+                >
+                  {Array.from({ length: MAX_RIFT_STACKS + 1 }, (_, stacks) => (
+                    <option key={stacks} value={stacks}>
+                      {stacks} / {MAX_RIFT_STACKS}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </section>
-        )}
+        ))}
 
         <ul className="flex flex-col gap-4">
           {sigils.map((s, i) => {
             const part = i as SigilPart
             const equipped = s.setId ? SIGIL_SET_MAP[s.setId] : null
+            const stat = s.setId ? sigilPartStat(s.setId, part, s.lv) : null
             return (
               <li key={i} className="flex items-center gap-3">
                 <span className="relative grid size-12 shrink-0 place-items-center overflow-hidden border border-border bg-secondary font-mono text-xs text-muted-foreground">
@@ -134,9 +156,9 @@ export function SigilSetModal({
                     </span>
                   </p>
                   <p className="text-sm font-bold">
-                    {PART_STATS[part].label}
+                    {stat?.label ?? 'ステータス'}
                     <span className={`ml-1 font-mono ${equipped ? 'text-primary' : 'text-muted-foreground'}`}>
-                      {equipped ? formatPct(sigilStatAt(part, s.lv)) : '—'}
+                      {stat ? formatPct(stat.value) : '—'}
                     </span>
                   </p>
                 </div>

@@ -17,7 +17,7 @@ export const CLASS_ORDER: CharacterClass[] = ['fury', 'umbra', 'endura']
 
 export const MAX_SKILL_LEVEL = 10
 export const MAX_SHACKLE = 5
-export const MAX_EXCLUSIVE_LEVEL = 5
+export const MAX_EXCLUSIVE_LEVEL = 3
 
 type Scaling = { base: number; perLevel: number }
 
@@ -46,7 +46,6 @@ export type Character = {
   className: CharacterClass
   image: string
   defaultAtk: number
-  exclusiveMaxLevel: number
   trait: string
   traitDamagePct: number
   traitCoreBrokenDamagePct: number
@@ -69,12 +68,11 @@ export type Character = {
   damageComponents: DamageComponent[]
   effects: CharacterEffect[]
   shackles: { name: string; text: string }[]
-  exclusive: Scaling & { text: string }
+  exclusive: Scaling & { text: string; valuesByLevel?: number[] }
   rebuild: RebuildRow[]
 }
 
 export type CharacterSeed = Pick<Character, 'id' | 'name' | 'className' | 'image' | 'defaultAtk'> & {
-  exclusiveMaxLevel?: number
   normal: number[]
   ultimate: number[]
   ultimateName: string
@@ -92,7 +90,7 @@ export type CharacterSeed = Pick<Character, 'id' | 'name' | 'className' | 'image
   traitCoreBrokenDmgPct?: number
   madnessCoreBrokenDmgPct?: number
   combat?: CharacterCombatData
-  exclusive: Scaling
+  exclusive: Scaling & { valuesByLevel?: number[] }
   rebuildUlts: [string, string]
   overrides?: Partial<Pick<Character, 'trait' | 'shackles'>> & {
     madnessText?: string
@@ -115,7 +113,6 @@ export function defineCharacter(seed: CharacterSeed): Character {
     className: seed.className,
     image: seed.image,
     defaultAtk: seed.defaultAtk,
-    exclusiveMaxLevel: seed.exclusiveMaxLevel ?? MAX_EXCLUSIVE_LEVEL,
     trait: overrides.trait ?? `${role}のコンビクト。与ダメージが5%アップし、…`,
     traitDamagePct: seed.traitDmgPct ?? 0,
     traitCoreBrokenDamagePct: seed.traitCoreBrokenDmgPct ?? 0,

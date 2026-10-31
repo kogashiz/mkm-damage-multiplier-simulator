@@ -8,7 +8,7 @@ import {
   type SkillLevels,
 } from './damage-model'
 import { summarizeRebuild } from './rebuild'
-import { activeSet, sigilStatAt, type SigilPart } from './sigils'
+import { activeSets, MAX_RIFT_STACKS, sigilPartStat, type SigilPart } from './sigils'
 
 export type SigilSlot = { setId: string | null; lv: number }
 
@@ -27,6 +27,7 @@ export type SlotState = {
   passive2Target: number
   defeatedEnemyCount: number
   singleEnemyInRange: boolean
+  riftStacks: number
   sigils: SigilSlot[]
   /** 適用中の再構築の行ID */
   rebuild: string[]
@@ -45,6 +46,12 @@ export type SlotResult = {
   passive: number
   damageComponents: CalculatedDamageComponent[]
   effects: ResolvedCharacterEffect[]
+  sigilStats: {
+    atkPct: number
+    hpPct: number
+    attackSpeedPct: number
+    initialEnergy: number
+  }
 }
 
 export type EnemySettings = {
@@ -78,6 +85,7 @@ export function createEmptySlot(slotIndex: number): SlotState {
     passive2Target: slotIndex,
     defeatedEnemyCount: 0,
     singleEnemyInRange: false,
+    riftStacks: 0,
     sigils: [0, 1, 2].map(() => ({ setId: null, lv: 1 })),
     rebuild: [],
   }
@@ -125,8 +133,23 @@ function calculateSlotResult(
   if (!character) return null
 
   const { mods } = summarizeRebuild(character.rebuild, slot.rebuild)
-  const set = activeSet(slot.sigils)
-  const sigilAtkPct = slot.sigils[0].setId ? sigilStatAt(0 as SigilPart, slot.sigils[0].lv) : 0
+  const sets = activeSets(slot.sigils)
+  const sigilStats = slot.sigils.reduce(
+    (total, sigil, index) => {
+      if (!sigil.setId) return total
+      const stat = sigilPartStat(sigil.setId, index as SigilPart, sigil.lv)
+      if (!stat) return total
+      if (stat.kind === 'atkPct') total.atkPct += stat.value
+      if (stat.kind === 'hpPct') total.hpPct += stat.value
+      if (stat.kind === 'attackSpeedPct') total.attackSpeedPct += stat.value
+      return total
+    },
+    { atkPct: 0, hpPct: 0, attackSpeedPct: 0, initialEnergy: 0 },
+  )
+  sigilStats.initialEnergy = sets.reduce(
+    (total, set) => total + (set.setEffect.initialEnergy ?? 0),
+    0,
+  )
 
   const atk = Math.max(0, Number(slot.atk) || 0)
   const defeatedEnemyAtkPct =
@@ -137,17 +160,16 @@ function calculateSlotResult(
           valueAt(character.combat.attackPerDefeatedEnemyCapByLevel, slot.passiveLv),
         )
       : 0
-  const atkAmp = 1 + buffRate + sigilAtkPct + mods.atkPct + defeatedEnemyAtkPct
+  const atkAmp = 1 + buffRate + sigilStats.atkPct + mods.atkPct + defeatedEnemyAtkPct
   const effectiveAtk = (atk + mods.atkFlat) * atkAmp
   const atkRatio = atk > 0 ? effectiveAtk / atk : atkAmp
 
   const dmgBonus =
     character.traitDamagePct +
     (slot.madness ? character.madness.dmgPct : 0) +
-    mods.dmgPct +
-    (set?.setEffect.dmgPct ?? 0)
+    mods.dmgPct
   const dmgAmp = 1 + dmgBonus
-  const ultAmp = (1 + mods.ultDmgPct + (set?.setEffect.ultDmgPct ?? 0)) * mods.ultimateScale
+  const ultAmp = (1 + mods.ultDmgPct) * mods.ultimateScale
   const normalDamagePct =
     character.combat.normalDamagePctByShackle?.[slot.shackle] ?? 0
   const singleEnemyDamagePct = slot.singleEnemyInRange
@@ -157,7 +179,8 @@ function calculateSlotResult(
     enemy.isCoreBroken
       ? character.traitCoreBrokenDamagePct +
         (slot.madness ? character.madnessCoreBrokenDamagePct : 0) +
-        (character.combat.coreBrokenDamagePct ?? 0)
+        (character.combat.coreBrokenDamagePct ?? 0) +
+        sets.reduce((total, set) => total + (set.setEffect.coreBrokenDamagePct ?? 0), 0)
       : 0
   const attackDamageAmp = dmgAmp * (1 + coreBrokenDamagePct) * (1 + singleEnemyDamagePct)
   const normalDamageAmp = attackDamageAmp * (1 + normalDamagePct)
@@ -209,6 +232,12 @@ function calculateSlotResult(
         (slot.madness ? character.combat.madnessPhysicalDefensePenetrationPct : 0),
     }),
     effects: resolveCharacterEffects(character.effects, skillLevels),
+    sigilStats: {
+      atkPct: sigilStats.atkPct,
+      hpPct: sigilStats.hpPct,
+      attackSpeedPct: sigilStats.attackSpeedPct,
+      initialEnergy: sigilStats.initialEnergy,
+    },
   }
 }
 
@@ -217,11 +246,22 @@ export function calculateParty(
   enemy: EnemySettings = DEFAULT_ENEMY_SETTINGS,
 ): SlotResult[] {
   const buffs = resolvePartyBuffs(slots)
-  const enemyDefenseReduction = slots.reduce((reduction, slot) => {
+  const noxDefenseReduction = slots.reduce((reduction, slot) => {
     const character = slot.characterId ? CHARACTER_MAP[slot.characterId] : null
     const values = character?.combat.enemyDefenseReductionByLevel
     return values ? Math.max(reduction, valueAt(values, slot.passive2Lv)) : reduction
   }, 0)
+  const riftDefenseReduction = slots.reduce((reduction, slot) => {
+    const activeRift = activeSets(slot.sigils).find((set) => set.id === 'rift')
+    return activeRift
+      ? Math.max(
+          reduction,
+          Math.min(slot.riftStacks, activeRift.setEffect.maxStacks ?? MAX_RIFT_STACKS) *
+            (activeRift.setEffect.normalAttackDefenseReductionPct ?? 0),
+        )
+      : reduction
+  }, 0)
+  const enemyDefenseReduction = Math.min(1, noxDefenseReduction + riftDefenseReduction)
   const effectiveEnemyDef = enemy.def * (1 - enemyDefenseReduction)
   return slots.flatMap((slot, index) => {
     const result = calculateSlotResult(slot, index, buffs[index], enemy, effectiveEnemyDef)

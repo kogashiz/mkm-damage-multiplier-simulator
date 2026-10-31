@@ -11,7 +11,6 @@ export const zoya = defineCharacter({
   className: 'fury',
   image: '/characters/zoya.png',
   defaultAtk: 100,
-  exclusiveMaxLevel: 1,
   normal: NORMAL_COEFFICIENTS,
   ultimate: ULTIMATE_COEFFICIENTS,
   ultimateName: '怒りの軍団',
@@ -119,6 +118,7 @@ export const zoya = defineCharacter({
   exclusive: {
     base: 0,
     perLevel: 0,
+    valuesByLevel: [0, 0.3, 0.35, 0.4],
   },
   rebuildUlts: ['怒りの軍臨', '疾鋒の軍臨'],
   overrides: {
@@ -131,6 +131,8 @@ export const zoya = defineCharacter({
       '通常攻撃を2回行うごとに、次の通常攻撃で敵の現在HPの{v}の防御無視ダメージを追加で与える。このダメージは自身のATKの{b}を超過しない。',
     passive2Text:
       '通常攻撃で連続ダメージを与えた後、攻撃速度が{b}アップする。4秒間継続し、最大15回までスタック可能。',
+    exclusiveText:
+      '必殺技の継続時間中、ゾーヤの被ダメージが{v}ダウンし、制御効果を無効化する。',
     shackles: [
       { name: '転覆', text: '必殺技の継続時間が5秒延長する。' },
       { name: '枷共鳴 I', text: '通常攻撃ダメージが5%アップする。' },
