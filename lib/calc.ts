@@ -1,4 +1,4 @@
-import { CHARACTER_MAP, coefAt, type Character } from './characters'
+import { CHARACTER_MAP, coefAt, valueAt, type Character } from './characters'
 import { summarizeRebuild } from './rebuild'
 import { activeSet, sigilStatAt, type SigilPart } from './sigils'
 
@@ -56,7 +56,7 @@ export function createEmptySlot(slotIndex: number): SlotState {
 }
 
 export function currentUltimateName(character: Character, rebuild: string[]) {
-  return summarizeRebuild(character.rebuild, rebuild).mods.ultimateName ?? character.ultimate.name
+  return summarizeRebuild(character.rebuild, rebuild).mods.ultimateName ?? character.ultimateName
 }
 
 export function calculateParty(slots: SlotState[]): SlotResult[] {
@@ -66,16 +66,8 @@ export function calculateParty(slots: SlotState[]): SlotResult[] {
   slots.forEach((slot, index) => {
     const character = slot.characterId ? CHARACTER_MAP[slot.characterId] : null
     if (!character) return
-    buffs[resolveTarget(slot.passiveTarget, index)] += coefAt(
-      character.passive.buffBase,
-      character.passive.buffPerLevel,
-      slot.passiveLv,
-    )
-    buffs[resolveTarget(slot.passive2Target, index)] += coefAt(
-      character.passive2.buffBase,
-      character.passive2.buffPerLevel,
-      slot.passive2Lv,
-    )
+    buffs[resolveTarget(slot.passiveTarget, index)] += valueAt(character.passiveBuff, slot.passiveLv)
+    buffs[resolveTarget(slot.passive2Target, index)] += valueAt(character.passive2, slot.passive2Lv)
   })
 
   return slots.flatMap((slot, index) => {
@@ -103,11 +95,10 @@ export function calculateParty(slots: SlotState[]): SlotResult[] {
         buffRate: buffs[index],
         effectiveAtk,
         dmgBonus,
-        ultimateName: mods.ultimateName ?? character.ultimate.name,
-        normal: coefAt(character.normal.base, character.normal.perLevel, slot.normalLv) * atkRatio * dmgAmp,
-        ultimate:
-          coefAt(character.ultimate.base, character.ultimate.perLevel, slot.ultimateLv) * atkRatio * dmgAmp * ultAmp,
-        passive: coefAt(character.passive.base, character.passive.perLevel, slot.passiveLv) * atkRatio * dmgAmp,
+        ultimateName: mods.ultimateName ?? character.ultimateName,
+        normal: valueAt(character.normal, slot.normalLv) * atkRatio * dmgAmp,
+        ultimate: valueAt(character.ultimate, slot.ultimateLv) * atkRatio * dmgAmp * ultAmp,
+        passive: valueAt(character.passive, slot.passiveLv) * atkRatio * dmgAmp,
       },
     ]
   })

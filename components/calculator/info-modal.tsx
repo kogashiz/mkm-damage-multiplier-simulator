@@ -1,4 +1,4 @@
-import { coefAt, formatPct, type Character } from '@/lib/characters'
+import { coefAt, formatPct, valueAt, type Character } from '@/lib/characters'
 import { currentUltimateName, type SlotState } from '@/lib/calc'
 import { ModalShell, Templated } from './modal-shell'
 
@@ -13,7 +13,7 @@ export function InfoModal({
   character: Character
   slot: SlotState
 }) {
-  const { normal, ultimate, passive, passive2, exclusive } = character
+  const { exclusive } = character
   const sections = [
     { title: '特性', body: character.trait },
     {
@@ -24,15 +24,20 @@ export function InfoModal({
     {
       title: '通常攻撃',
       badge: `Lv${slot.normalLv}`,
-      body: <Templated text={normal.text} values={{ v: formatPct(coefAt(normal.base, normal.perLevel, slot.normalLv)) }} />,
+      body: (
+        <Templated
+          text={character.normalText}
+          values={{ v: formatPct(valueAt(character.normal, slot.normalLv)) }}
+        />
+      ),
     },
     {
       title: `必殺技【${currentUltimateName(character, slot.rebuild)}】`,
       badge: `Lv${slot.ultimateLv}`,
       body: (
         <Templated
-          text={ultimate.text}
-          values={{ v: formatPct(coefAt(ultimate.base, ultimate.perLevel, slot.ultimateLv)) }}
+          text={character.ultimateText}
+          values={{ v: formatPct(valueAt(character.ultimate, slot.ultimateLv)) }}
         />
       ),
     },
@@ -41,10 +46,10 @@ export function InfoModal({
       badge: `Lv${slot.passiveLv}`,
       body: (
         <Templated
-          text={passive.text}
+          text={character.passiveText}
           values={{
-            v: formatPct(coefAt(passive.base, passive.perLevel, slot.passiveLv)),
-            b: formatPct(coefAt(passive.buffBase, passive.buffPerLevel, slot.passiveLv)),
+            v: formatPct(valueAt(character.passive, slot.passiveLv)),
+            b: formatPct(valueAt(character.passiveBuff, slot.passiveLv)),
           }}
         />
       ),
@@ -54,8 +59,8 @@ export function InfoModal({
       badge: `Lv${slot.passive2Lv}`,
       body: (
         <Templated
-          text={passive2.text}
-          values={{ b: formatPct(coefAt(passive2.buffBase, passive2.buffPerLevel, slot.passive2Lv)) }}
+          text={character.passive2Text}
+          values={{ b: formatPct(valueAt(character.passive2, slot.passive2Lv)) }}
         />
       ),
     },
