@@ -6,7 +6,6 @@ import { Info, Plus, RefreshCw, X } from 'lucide-react'
 import {
   CHARACTER_MAP,
   CLASS_LABELS,
-  MAX_EXCLUSIVE_LEVEL,
   MAX_SHACKLE,
   MAX_SKILL_LEVEL,
   type BuffTargetMode,
@@ -22,7 +21,6 @@ type MemberOption = { slotIndex: number; name: string }
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i)
 const SKILL_LEVELS = range(1, MAX_SKILL_LEVEL)
 const SHACKLE_LEVELS = range(0, MAX_SHACKLE)
-const EXCLUSIVE_LEVELS = range(0, MAX_EXCLUSIVE_LEVEL)
 const SIGIL_LEVELS = range(1, MAX_SIGIL_LEVEL)
 
 const fieldClass =
@@ -221,11 +219,39 @@ function FilledSlot({
             <NumberSelect
               id={`${idPrefix}-exclusive`}
               value={slot.exclusiveLv}
-              options={EXCLUSIVE_LEVELS}
+              options={range(0, character.exclusiveMaxLevel)}
               format={(v) => (v === 0 ? '—' : String(v))}
               onChange={(v) => onChange({ exclusiveLv: v })}
             />
           </LabeledField>
+          {character.id === 'nox' && (
+            <LabeledField id={`${idPrefix}-defeated-enemies`} label="撃退数">
+              <input
+                id={`${idPrefix}-defeated-enemies`}
+                type="number"
+                min={0}
+                max={50}
+                step={1}
+                inputMode="numeric"
+                value={slot.defeatedEnemyCount}
+                onChange={(event) =>
+                  onChange({ defeatedEnemyCount: Math.max(0, Math.min(50, Number(event.target.value) || 0)) })
+                }
+                className={`${fieldClass} text-right`}
+              />
+            </LabeledField>
+          )}
+          {character.id === 'zoya' && slot.shackle >= 3 && (
+            <label className="col-span-2 flex min-h-9 cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={slot.singleEnemyInRange}
+                onChange={(event) => onChange({ singleEnemyInRange: event.target.checked })}
+                className="size-4 accent-primary"
+              />
+              周囲十字マス範囲内に敵が1体のみ（エンカウント）
+            </label>
+          )}
         </section>
 
         <section aria-label="スキル" className="flex flex-col gap-3 border-b border-border p-4">
@@ -447,5 +473,13 @@ function SkillRow({
 }
 
 function TargetText({ mode = 'self' }: { mode?: Exclude<BuffTargetMode, 'select-one'> }) {
-  return <span className="text-xs text-muted-foreground">{mode === 'self' ? '自 ⇒ 自' : '自 ⇒ 全員'}</span>
+  const label =
+    mode === 'self'
+      ? '自 ⇒ 自'
+      : mode === 'all'
+        ? '自 ⇒ 全員'
+        : mode === 'enemy-all'
+          ? '敵全員'
+          : '—'
+  return <span className="text-xs text-muted-foreground">{label}</span>
 }

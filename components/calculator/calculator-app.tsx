@@ -58,6 +58,7 @@ export function CalculatorApp() {
               ...s,
               characterId,
               atk: s.characterId ? s.atk : String(character.defaultAtk),
+              exclusiveLv: s.characterId === characterId ? s.exclusiveLv : 0,
               rebuild: s.characterId === characterId ? s.rebuild : [],
             }
           : s,
@@ -154,7 +155,7 @@ function EnemySettingsPanel({
   return (
     <section
       aria-label="敵・戦闘状態"
-      className="mx-auto mt-5 grid max-w-7xl grid-cols-1 gap-4 border border-border bg-card p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-[minmax(12rem,1fr)_minmax(12rem,1fr)_minmax(12rem,1fr)]"
+      className="mx-auto mt-5 grid max-w-7xl grid-cols-1 gap-4 border border-border bg-card p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-[minmax(12rem,1fr)_minmax(12rem,1fr)_minmax(12rem,1fr)_minmax(12rem,1fr)]"
     >
       <EnemyDefenseField
         id="enemy-def"
@@ -178,6 +179,15 @@ function EnemySettingsPanel({
           className="size-5 accent-primary"
         />
         <span className="font-bold">Break中</span>
+      </label>
+      <label className="flex min-h-14 cursor-pointer items-center gap-3 border border-border bg-background px-3 py-3 transition hover:border-primary/60">
+        <input
+          type="checkbox"
+          checked={enemy.isCoreBroken}
+          onChange={(event) => onChange({ ...enemy, isCoreBroken: event.target.checked })}
+          className="size-5 accent-primary"
+        />
+        <span className="font-bold">コア破壊中</span>
       </label>
     </section>
   )

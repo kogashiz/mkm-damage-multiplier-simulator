@@ -43,6 +43,9 @@ export function ResultView({
           <span className={enemy.isBreak ? 'font-bold text-primary' : 'text-muted-foreground'}>
             {enemy.isBreak ? 'Break中' : 'Breakなし'}
           </span>
+          <span className={enemy.isCoreBroken ? 'font-bold text-primary' : 'text-muted-foreground'}>
+            {enemy.isCoreBroken ? 'コア破壊中' : 'コア未破壊'}
+          </span>
         </div>
         <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((r) => (

@@ -80,6 +80,9 @@ export type DamageCalculationContext = {
   isBreak: boolean
   damageMultiplier: number
   ultimateMultiplier: number
+  normalDamageMultiplier?: number
+  coreBrokenDamageMultiplier?: number
+  physicalDefensePenetrationPct?: number
 }
 
 function valueAt(values: number[], level: number, description: string) {
@@ -145,13 +148,24 @@ export function calculateDamageComponents(
 
     const appliedDefense =
       component.damageType === 'physical'
-        ? context.enemyDef
+        ? context.enemyDef * (1 - (context.physicalDefensePenetrationPct ?? 0))
         : component.damageType === 'magic'
           ? context.enemyMdf
           : 0
-    const ultimateMultiplier = component.skill === 'ultimate' ? context.ultimateMultiplier : 1
+    const ultimateMultiplier =
+      component.skill === 'ultimate' && component.category !== 'normal'
+        ? context.ultimateMultiplier
+        : 1
+    const normalDamageMultiplier =
+      component.category === 'normal' ? context.normalDamageMultiplier ?? 1 : 1
+    const coreBrokenDamageMultiplier = context.coreBrokenDamageMultiplier ?? 1
     const breakMultiplier = context.isBreak ? 1.5 : 1
-    const otherMultiplier = context.damageMultiplier * ultimateMultiplier * breakMultiplier
+    const otherMultiplier =
+      context.damageMultiplier *
+      ultimateMultiplier *
+      normalDamageMultiplier *
+      coreBrokenDamageMultiplier *
+      breakMultiplier
     const defenseAdjustedAttack = context.finalAttack - appliedDefense
     const minimumAttack = component.damageType === 'defense-ignoring' ? defenseAdjustedAttack : context.finalAttack * 0.05
     const damagePerHit =
