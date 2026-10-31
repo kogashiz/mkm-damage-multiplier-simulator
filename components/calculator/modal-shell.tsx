@@ -44,7 +44,7 @@ export function ModalShell({
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
-      className={`${SIZES[size]} m-auto max-h-[calc(100dvh-2rem)] max-w-none border border-primary/50 bg-card p-0 text-foreground shadow-[0_0_60px_-10px_var(--primary)] backdrop:bg-black/75 backdrop:backdrop-blur-sm open:flex open:flex-col`}
+      className={`${SIZES[size]} m-auto max-h-[calc(100dvh-2rem)] max-w-none overscroll-contain border border-primary/50 bg-card p-0 text-foreground shadow-[0_0_60px_-10px_var(--primary)] backdrop:bg-black/75 backdrop:backdrop-blur-sm open:flex open:flex-col`}
     >
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3">
         <div className="min-w-0">
@@ -65,7 +65,7 @@ export function ModalShell({
           </button>
         </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">{open && children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{open && children}</div>
     </dialog>
   )
 }

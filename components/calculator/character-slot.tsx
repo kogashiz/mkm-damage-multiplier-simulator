@@ -56,11 +56,7 @@ export function CharacterSlot({
       <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-2.5">
         <div className="flex items-center gap-3">
           <span className="font-mono text-xs text-primary">{slotLabel}</span>
-          <span
-            className={`border px-3 py-0.5 text-sm ${
-              character ? 'border-accent/70 font-bold' : 'border-border text-muted-foreground'
-            }`}
-          >
+          <span className={`text-sm ${character ? 'font-bold' : 'text-muted-foreground'}`}>
             {character?.name ?? '未選択'}
           </span>
         </div>
@@ -162,18 +158,31 @@ function FilledSlot({
           alt={`${character.name}の立ち絵`}
           fill
           sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
-          className="object-cover object-[50%_20%] transition duration-500 group-hover:scale-105"
+          className="pointer-events-none object-cover object-[50%_20%] transition duration-500 group-hover:scale-105"
         />
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent"
+        />
         <button
           type="button"
           onClick={onOpenSelect}
-          className="absolute right-2 top-2 flex items-center gap-1.5 border border-border bg-background/85 px-2 py-1 text-xs transition hover:border-primary hover:text-primary focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+          aria-label={`${character.name}を変更`}
+          className="absolute inset-0 z-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-primary"
+        />
+        <button
+          type="button"
+          onClick={onOpenSelect}
+          className="absolute right-2 top-2 z-10 flex items-center gap-1.5 border border-border bg-background/85 px-2 py-1 text-xs transition hover:border-primary hover:text-primary focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
         >
           <RefreshCw className="size-3" aria-hidden="true" />
           キャラ変更
         </button>
-        <button type="button" onClick={() => setInfoOpen(true)} className={`${infoButtonClass} absolute bottom-2 right-2`}>
+        <button
+          type="button"
+          onClick={() => setInfoOpen(true)}
+          className={`${infoButtonClass} absolute bottom-2 right-2 z-10`}
+        >
           <Info className="size-4" aria-hidden="true" />
           <span className="sr-only">{character.name}の情報を表示</span>
         </button>
