@@ -21,7 +21,7 @@ export type SigilSet = {
   partStats: Partial<Record<SigilPart, SigilPartStat>>
   setEffect: {
     text: string
-    coreBrokenDamagePct?: number
+    breakDamagePct?: number
     normalAttackDefenseReductionPct?: number
     maxStacks?: number
     durationSeconds?: number
@@ -42,7 +42,7 @@ export const SIGIL_SETS: SigilSet[] = [
     },
     setEffect: {
       text: 'コアが破壊された敵に対するダメージが40%アップする。',
-      coreBrokenDamagePct: 0.4,
+      breakDamagePct: 0.4,
     },
   },
   {

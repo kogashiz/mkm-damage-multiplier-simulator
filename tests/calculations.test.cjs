@@ -60,11 +60,11 @@ test('damage components apply enemy defense, Break, and minimum damage', () => {
   const normal = component(result, 'normal')
 
   assert.equal(normal.appliedDefense, 1000)
-  assert.ok(Math.abs(normal.damagePerHit - 100 * 0.05 * 0.83 * 1.15 * 1.5) < 1e-10)
+  assert.ok(Math.abs(normal.damagePerHit - 100 * 0.05 * 0.83 * 1.15 * 1.15 * 1.5) < 1e-10)
   assert.equal(component(result, 'passive1-current-hp').damageTotal, null)
 })
 
-test('Zoya applies core-broken and shackle conditions only when selected', () => {
+test('Zoya applies Break and shackle conditions only when selected', () => {
   const zoya = createSlot(0, 'zoya', {
     shackle: 3,
     singleEnemyInRange: true,
@@ -72,10 +72,14 @@ test('Zoya applies core-broken and shackle conditions only when selected', () =>
   const [result] = calculateParty([zoya], {
     def: 0,
     mdf: 0,
-    isBreak: false,
-    isCoreBroken: true,
+    isBreak: true,
   })
-  assert.ok(Math.abs(component(result, 'normal').damagePerHit - 0.83 * 100 * 1.05 * 1.05 * 1.2 * 1.05) < 1e-10)
+  assert.ok(
+    Math.abs(
+      component(result, 'normal').damagePerHit -
+        0.83 * 100 * 1.05 * 1.05 * 1.2 * 1.05 * 1.5,
+    ) < 1e-10,
+  )
 })
 
 test('NOX defeat stacks raise ATK, reduce enemy DEF, and calculate exclusive damage', () => {
@@ -90,7 +94,6 @@ test('NOX defeat stacks raise ATK, reduce enemy DEF, and calculate exclusive dam
     def: 100,
     mdf: 0,
     isBreak: false,
-    isCoreBroken: false,
   })
 
   assert.ok(Math.abs(noxResult.effectiveAtk - 115) < 1e-10)
@@ -121,19 +124,24 @@ test('crimebrand parts have set-specific level stats and set thresholds', () => 
   )
 })
 
-test('Embrace increases damage only against core-broken enemies', () => {
+test('Embrace increases damage during Break and Break applies the 1.5x multiplier', () => {
   const sigils = [0, 1, 2].map(() => ({ setId: 'embrace', lv: 1 }))
   const zoya = createSlot(0, 'zoya', { sigils })
-  const [unbroken] = calculateParty([zoya])
-  const [broken] = calculateParty([zoya], {
+  const [notBreaking] = calculateParty([zoya])
+  const [breaking] = calculateParty([zoya], {
     def: 0,
     mdf: 0,
-    isBreak: false,
-    isCoreBroken: true,
+    isBreak: true,
   })
 
-  assert.ok(Math.abs(unbroken.normal - 0.83 * 1.06 * 1.05) < 1e-10)
-  assert.ok(Math.abs(broken.normal - 0.83 * 1.06 * 1.05 * 1.45) < 1e-10)
+  assert.ok(Math.abs(notBreaking.normal - 0.83 * 1.06 * 1.05) < 1e-10)
+  assert.ok(Math.abs(breaking.normal - 0.83 * 1.06 * 1.05 * 1.45 * 1.5) < 1e-10)
+  assert.ok(
+    Math.abs(
+      component(breaking, 'normal').damagePerHit -
+        component(notBreaking, 'normal').damagePerHit * 1.45 * 1.5,
+    ) < 1e-10,
+  )
 })
 
 test('Rift stacks reduce enemy DEF for the whole party and Echo adds shown stats', () => {
@@ -156,7 +164,6 @@ test('Rift stacks reduce enemy DEF for the whole party and Echo adds shown stats
     def: 100,
     mdf: 0,
     isBreak: false,
-    isCoreBroken: false,
   })
 
   assert.equal(component(riftResult, 'normal').appliedDefense, 73)

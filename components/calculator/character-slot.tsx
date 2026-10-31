@@ -216,12 +216,12 @@ function FilledSlot({
               onChange={(v) => onChange({ shackle: v })}
             />
           </LabeledField>
-          <LabeledField id={`${idPrefix}-exclusive`} label="専属刻印">
+          <LabeledField id={`${idPrefix}-exclusive`} label="専属Lv">
             <NumberSelect
               id={`${idPrefix}-exclusive`}
               value={slot.exclusiveLv}
               options={range(0, MAX_EXCLUSIVE_LEVEL)}
-              format={(v) => (v === 0 ? '未開放' : `レベル${v}`)}
+              format={(v) => (v === 0 ? '未開放' : `${v}`)}
               onChange={(v) => onChange({ exclusiveLv: v })}
             />
           </LabeledField>

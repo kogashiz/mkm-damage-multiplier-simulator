@@ -58,14 +58,12 @@ export type EnemySettings = {
   def: number
   mdf: number
   isBreak: boolean
-  isCoreBroken: boolean
 }
 
 export const DEFAULT_ENEMY_SETTINGS: EnemySettings = {
   def: 0,
   mdf: 0,
   isBreak: false,
-  isCoreBroken: false,
 }
 
 export const SLOT_COUNT = 6
@@ -176,11 +174,11 @@ function calculateSlotResult(
     ? character.combat.singleEnemyDamagePctByShackle?.[slot.shackle] ?? 0
     : 0
   const coreBrokenDamagePct =
-    enemy.isCoreBroken
+    enemy.isBreak
       ? character.traitCoreBrokenDamagePct +
         (slot.madness ? character.madnessCoreBrokenDamagePct : 0) +
         (character.combat.coreBrokenDamagePct ?? 0) +
-        sets.reduce((total, set) => total + (set.setEffect.coreBrokenDamagePct ?? 0), 0)
+        sets.reduce((total, set) => total + (set.setEffect.breakDamagePct ?? 0), 0)
       : 0
   const attackDamageAmp = dmgAmp * (1 + coreBrokenDamagePct) * (1 + singleEnemyDamagePct)
   const normalDamageAmp = attackDamageAmp * (1 + normalDamagePct)
@@ -215,9 +213,22 @@ function calculateSlotResult(
     effectiveAtk,
     dmgBonus,
     ultimateName: mods.ultimateName ?? character.ultimateName,
-    normal: valueAt(character.normal, slot.normalLv) * atkRatio * normalDamageAmp,
-    ultimate: valueAt(character.ultimate, slot.ultimateLv) * atkRatio * attackDamageAmp * ultAmp,
-    passive: valueAt(character.passive, slot.passiveLv) * atkRatio * attackDamageAmp,
+    normal:
+      valueAt(character.normal, slot.normalLv) *
+      atkRatio *
+      normalDamageAmp *
+      (enemy.isBreak ? 1.5 : 1),
+    ultimate:
+      valueAt(character.ultimate, slot.ultimateLv) *
+      atkRatio *
+      attackDamageAmp *
+      ultAmp *
+      (enemy.isBreak ? 1.5 : 1),
+    passive:
+      valueAt(character.passive, slot.passiveLv) *
+      atkRatio *
+      attackDamageAmp *
+      (enemy.isBreak ? 1.5 : 1),
     damageComponents: calculateDamageComponents(damageComponents, {
       finalAttack: effectiveAtk,
       enemyDef,
