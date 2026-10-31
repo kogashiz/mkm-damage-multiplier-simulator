@@ -10,7 +10,7 @@ export type RebuildMods = {
 
 export type RebuildRow = {
   id: string
-  stage: 1 | 2
+  stage: 1 | 2 | 3 | 4
   kind: 'stage' | 'check' | 'radio'
   /** ラジオボタンの排他グループ */
   group?: string
@@ -21,7 +21,7 @@ export type RebuildRow = {
   mods: RebuildMods
 }
 
-export const STAGE_LABELS = { 1: 'I', 2: 'II' } as const
+export const STAGE_LABELS = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' } as const
 
 export function buildRebuild(name: string, ultA: string, ultB: string): RebuildRow[] {
   const ultText = (ult: string) =>
@@ -98,12 +98,17 @@ export function buildRebuild(name: string, ultA: string, ultB: string): RebuildR
   ]
 }
 
-const STAGE_ROW_ID: Record<1 | 2, string> = { 1: 's1', 2: 's2' }
+const STAGE_ROW_ID: Record<RebuildRow['stage'], string> = {
+  1: 's1',
+  2: 's2',
+  3: 's3',
+  4: 's4',
+}
 
 /** 段階行が選択されていない段階の効果は選択できない（II は I が前提） */
 export function isRowSelectable(row: RebuildRow, selected: string[]) {
-  if (row.kind === 'stage') return row.stage === 1 || selected.includes(STAGE_ROW_ID[1])
-  return selected.includes(STAGE_ROW_ID[row.stage])
+  if (row.stage === 1) return true
+  return selected.includes(STAGE_ROW_ID[(row.stage - 1) as RebuildRow['stage']])
 }
 
 export function toggleRow(rows: RebuildRow[], selected: string[], row: RebuildRow): string[] {

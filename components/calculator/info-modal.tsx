@@ -60,7 +60,19 @@ export function InfoModal({
       body: (
         <Templated
           text={character.passive2Text}
-          values={{ b: formatPct(valueAt(character.passive2, slot.passive2Lv)) }}
+          values={{
+            v: formatPct(valueAt(character.passive2, slot.passive2Lv)),
+            b: formatPct(
+              character.passive2Buff
+                ? valueAt(character.passive2Buff, slot.passive2Lv)
+                : valueAt(character.passive2, slot.passive2Lv),
+            ),
+            c: formatPct(
+              character.passive2AdditionalBuff
+                ? valueAt(character.passive2AdditionalBuff, slot.passive2Lv)
+                : 0,
+            ),
+          }}
         />
       ),
     },
@@ -103,6 +115,9 @@ export function InfoModal({
                 v: formatPct(
                   exclusive.valuesByLevel?.[Math.max(1, slot.exclusiveLv) - 1] ??
                     coefAt(exclusive.base, exclusive.perLevel, Math.max(1, slot.exclusiveLv)),
+                ),
+                b: formatPct(
+                  exclusive.secondaryValuesByLevel?.[Math.max(1, slot.exclusiveLv) - 1] ?? 0,
                 ),
               }}
             />

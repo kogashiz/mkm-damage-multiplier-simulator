@@ -1,6 +1,9 @@
 export type SkillKey = 'normal' | 'ultimate' | 'passive' | 'passive2'
 export type DamageCategory = 'normal' | 'skill' | 'special'
 export type DamageType = 'physical' | 'magic' | 'defense-ignoring'
+export type DamageAttribute = 'weakspot' | 'wind-erosion' | 'burn' | 'life-loss'
+export type DamageAttackKind = 'normal-attack-damage' | 'skill-damage'
+export type DamageHitCountInput = 'weakspot-removal-successes'
 
 export type DamageSource =
   | {
@@ -22,7 +25,12 @@ export type DamageComponent = {
   label: string
   category: DamageCategory
   damageType: DamageType
+  damageAttribute?: DamageAttribute | null
+  damageAttackKind?: DamageAttackKind
+  calculationEnabled?: boolean
+  multiplier?: number
   hitCount: number
+  hitCountInput?: DamageHitCountInput
   activationCondition?: {
     kind: 'after-normal-attacks'
     count: number
@@ -93,10 +101,18 @@ function valueAt(values: number[], level: number, description: string) {
   return value
 }
 
-export function resolveDamageComponents(components: DamageComponent[], levels: SkillLevels) {
+export function resolveDamageComponents(
+  components: DamageComponent[],
+  levels: SkillLevels,
+  hitCountInputs: Partial<Record<DamageHitCountInput, number>> = {},
+) {
   return components.map((component): ResolvedDamageComponent => {
     const level = levels[component.source.levelSource]
-    const { source, ...metadata } = component
+    const { source, hitCountInput, ...componentMetadata } = component
+    const metadata = {
+      ...componentMetadata,
+      hitCount: hitCountInput ? Math.max(0, hitCountInputs[hitCountInput] ?? 0) : component.hitCount,
+    }
     if (source.kind === 'attack-coefficient') {
       const coefficientPerHit = valueAt(source.coefficientsByLevel, level, component.id)
       return {
@@ -171,7 +187,8 @@ export function calculateDamageComponents(
     const damagePerHit =
       Math.max(defenseAdjustedAttack, minimumAttack) *
       component.coefficientPerHit *
-      otherMultiplier
+      otherMultiplier *
+      (component.multiplier ?? 1)
 
     return {
       ...component,

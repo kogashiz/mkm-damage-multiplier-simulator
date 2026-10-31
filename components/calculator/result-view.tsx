@@ -59,10 +59,14 @@ export function ResultView({
 function ResultCard({ result }: { result: SlotResult }) {
   const { character } = result
   const rows = [
-    { label: '通常倍率', value: result.normal },
-    { label: `必殺倍率【${result.ultimateName}】`, value: result.ultimate },
-    { label: 'パッシブ1倍率', value: result.passive },
-  ]
+    { skill: 'normal', label: '通常倍率', value: result.normal },
+    { skill: 'ultimate', label: `必殺倍率【${result.ultimateName}】`, value: result.ultimate },
+    { skill: 'passive', label: 'パッシブ1倍率', value: result.passive },
+  ].filter((row) =>
+    character.damageComponents.some(
+      (component) => component.calculationEnabled !== false && component.skill === row.skill,
+    ),
+  )
 
   return (
     <article className="cyber-clip-lg animate-in fade-in slide-in-from-bottom-2 border border-border bg-card duration-500">
@@ -99,56 +103,88 @@ function ResultCard({ result }: { result: SlotResult }) {
       </div>
 
       <dl className="divide-y divide-border px-4">
-        {rows.map((row) => (
-          <div key={row.label} className="flex items-baseline justify-between py-3">
-            <dt className="text-sm text-muted-foreground">{row.label}</dt>
-            <dd className="flex items-baseline gap-1.5">
-              <span className="font-mono text-2xl font-bold text-primary [text-shadow:0_0_12px_color-mix(in_oklab,var(--primary)_60%,transparent)]">
-                {fmt(row.value)}
-              </span>
-              <span className="text-sm">倍</span>
-            </dd>
+        {!character.calculationSupported && (
+          <div className="py-4 text-sm leading-relaxed text-muted-foreground">
+            このコンビクトの倍率・ダメージ計算は未対応です。スキル情報と効果の選択・表示のみ利用できます。
           </div>
-        ))}
-        {result.damageComponents.map((component) => (
-          <div key={component.id} className="flex items-baseline justify-between gap-3 py-3">
-            <dt className="text-sm text-muted-foreground">{component.label}</dt>
-            <dd className="text-right">
-              {component.sourceKind === 'current-enemy-hp' ? (
-                <span className="text-sm text-muted-foreground">
-                  敵HP {(component.hpRatio * 100).toFixed(0)}%（ATK上限{' '}
-                  {fmt(component.maxAttackCoefficient)}倍）
+        )}
+        {character.calculationSupported &&
+          rows.map((row) => (
+            <div key={row.label} className="flex items-baseline justify-between py-3">
+              <dt className="text-sm text-muted-foreground">{row.label}</dt>
+              <dd className="flex items-baseline gap-1.5">
+                <span className="font-mono text-2xl font-bold text-primary [text-shadow:0_0_12px_color-mix(in_oklab,var(--primary)_60%,transparent)]">
+                  {fmt(row.value)}
                 </span>
-              ) : component.damageTotal !== null && component.damagePerHit !== null ? (
-                <>
-                  <p className="mb-1 text-xs text-muted-foreground">
-                    係数 {fmt(component.coefficientPerHit * 100)}%
-                    {component.hitCount > 1 &&
-                      `（合計 ${fmt(component.coefficientTotal * 100)}%）`}
-                  </p>
-                  {component.hitCount > 1 && (
-                    <span className="mr-2 text-xs text-muted-foreground">
-                      {component.hitCount}H 合計
-                    </span>
-                  )}
-                  <span className="font-mono text-xl font-bold text-primary [text-shadow:0_0_12px_color-mix(in_oklab,var(--primary)_60%,transparent)]">
-                    {fmt(component.damageTotal)}
+                <span className="text-sm">倍</span>
+              </dd>
+            </div>
+          ))}
+        {character.calculationSupported &&
+          result.damageComponents.map((component) => (
+            <div key={component.id} className="flex items-baseline justify-between gap-3 py-3">
+              <dt className="text-sm text-muted-foreground">
+                {component.label}
+                {(component.damageAttribute !== undefined ||
+                  component.damageAttackKind !== undefined) && (
+                  <span className="mt-1 block text-[10px]">
+                    {component.damageType === 'physical'
+                      ? '物理'
+                      : component.damageType === 'magic'
+                        ? '魔法'
+                        : '防御無視'}
+                    {' / '}
+                    {component.damageAttribute ?? '属性なし'}
+                    {' / '}
+                    {component.damageAttackKind === 'normal-attack-damage'
+                      ? '通常攻撃ダメージ'
+                      : 'スキルダメージ'}
                   </span>
-                  <span className="ml-1 text-xs">ダメージ</span>
-                  {component.hitCount > 1 && component.damagePerHit !== null && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      1H {fmt(component.damagePerHit)}
+                )}
+              </dt>
+              <dd className="text-right">
+                {component.sourceKind === 'current-enemy-hp' ? (
+                  <span className="text-sm text-muted-foreground">
+                    敵HP {(component.hpRatio * 100).toFixed(0)}%（ATK上限{' '}
+                    {fmt(component.maxAttackCoefficient)}倍）
+                  </span>
+                ) : component.damageTotal !== null && component.damagePerHit !== null ? (
+                  <>
+                    <p className="mb-1 text-xs text-muted-foreground">
+                      係数 {fmt(component.coefficientPerHit * 100)}%
+                      {component.hitCount > 1 &&
+                        `（合計 ${fmt(component.coefficientTotal * 100)}%）`}
                     </p>
-                  )}
-                </>
-              ) : null}
-            </dd>
+                    {component.hitCount > 1 && (
+                      <span className="mr-2 text-xs text-muted-foreground">
+                        {component.hitCount}H 合計
+                      </span>
+                    )}
+                    <span className="font-mono text-xl font-bold text-primary [text-shadow:0_0_12px_color-mix(in_oklab,var(--primary)_60%,transparent)]">
+                      {fmt(component.damageTotal)}
+                    </span>
+                    <span className="ml-1 text-xs">ダメージ</span>
+                    {component.hitCount > 1 && component.damagePerHit !== null && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        1H {fmt(component.damagePerHit)}
+                      </p>
+                    )}
+                  </>
+                ) : null}
+              </dd>
+            </div>
+          ))}
+        {character.calculationSupported && character.calculationNote && (
+          <div className="py-3 text-xs leading-relaxed text-muted-foreground">
+            {character.calculationNote}
           </div>
-        ))}
-        <div className="flex items-baseline justify-between py-3">
-          <dt className="text-xs text-muted-foreground">実効ATK</dt>
-          <dd className="font-mono text-sm">{fmt(result.effectiveAtk)}</dd>
-        </div>
+        )}
+        {character.calculationSupported && (
+          <div className="flex items-baseline justify-between py-3">
+            <dt className="text-xs text-muted-foreground">実効ATK</dt>
+            <dd className="font-mono text-sm">{fmt(result.effectiveAtk)}</dd>
+          </div>
+        )}
         {(result.sigilStats.atkPct > 0 ||
           result.sigilStats.hpPct > 0 ||
           result.sigilStats.attackSpeedPct > 0 ||

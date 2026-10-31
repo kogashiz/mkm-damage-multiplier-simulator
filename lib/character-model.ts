@@ -3,6 +3,7 @@ import {
   createStandardDamageComponents,
   type CharacterEffect,
   type DamageComponent,
+  type SkillKey,
 } from './damage-model'
 
 export type CharacterClass = 'endura' | 'fury' | 'umbra' | 'reticle' | 'arcane' | 'catalyst'
@@ -56,6 +57,10 @@ export type Character = {
   className: CharacterClass
   image: string
   defaultAtk: number
+  calculationSupported: boolean
+  calculationNote?: string
+  madnessRequiresWeakspotMark: boolean
+  skillMaxLevels?: Partial<Record<SkillKey, number>>
   trait: string
   traitDamagePct: number
   traitCoreBrokenDamagePct: number
@@ -68,30 +73,44 @@ export type Character = {
   ultimateText: string
   passive: number[]
   passiveBuff: number[]
+  passiveBuffAffectsAttack: boolean
   passiveBuffTargetMode: BuffTargetMode
   passiveText: string
   passive2: number[]
   passive2TargetMode: BuffTargetMode
   passive2Buff?: number[]
+  passive2BuffAffectsAttack: boolean
+  passive2AdditionalBuff?: number[]
   passive2Text: string
   combat: CharacterCombatData
   damageComponents: DamageComponent[]
   effects: CharacterEffect[]
   shackles: { name: string; text: string }[]
-  exclusive: Scaling & { text: string; valuesByLevel?: number[] }
+  exclusive: Scaling & {
+    text: string
+    valuesByLevel?: number[]
+    secondaryValuesByLevel?: number[]
+  }
   rebuild: RebuildRow[]
 }
 
 export type CharacterSeed = Pick<Character, 'id' | 'name' | 'className' | 'image' | 'defaultAtk'> & {
+  calculationSupported?: boolean
+  calculationNote?: string
+  madnessRequiresWeakspotMark?: boolean
+  skillMaxLevels?: Partial<Record<SkillKey, number>>
   normal: number[]
   ultimate: number[]
   ultimateName: string
   passive: number[]
   passiveBuff: number[]
+  passiveBuffAffectsAttack?: boolean
   passiveBuffTargetMode?: BuffTargetMode
   passive2: number[]
   passive2TargetMode?: BuffTargetMode
   passive2Buff?: number[]
+  passive2BuffAffectsAttack?: boolean
+  passive2AdditionalBuff?: number[]
   passive2BuffTargetMode?: BuffTargetMode
   damageComponents?: DamageComponent[]
   effects?: CharacterEffect[]
@@ -100,8 +119,9 @@ export type CharacterSeed = Pick<Character, 'id' | 'name' | 'className' | 'image
   traitCoreBrokenDmgPct?: number
   madnessCoreBrokenDmgPct?: number
   combat?: CharacterCombatData
-  exclusive: Scaling & { valuesByLevel?: number[] }
-  rebuildUlts: [string, string]
+  exclusive: Scaling & { valuesByLevel?: number[]; secondaryValuesByLevel?: number[] }
+  rebuildUlts?: [string, string]
+  rebuildRows?: RebuildRow[]
   overrides?: Partial<Pick<Character, 'trait' | 'shackles'>> & {
     madnessText?: string
     normalText?: string
@@ -115,6 +135,7 @@ export type CharacterSeed = Pick<Character, 'id' | 'name' | 'className' | 'image
 export function defineCharacter(seed: CharacterSeed): Character {
   const { name, overrides = {} } = seed
   const role = CLASS_LABELS[seed.className]
+  const rebuild = seed.rebuildRows ?? (seed.rebuildUlts ? buildRebuild(name, ...seed.rebuildUlts) : [])
   const damageComponents =
     seed.damageComponents ?? createStandardDamageComponents(seed.normal, seed.ultimate, seed.passive)
   return {
@@ -123,6 +144,10 @@ export function defineCharacter(seed: CharacterSeed): Character {
     className: seed.className,
     image: seed.image,
     defaultAtk: seed.defaultAtk,
+    calculationSupported: seed.calculationSupported ?? true,
+    calculationNote: seed.calculationNote,
+    madnessRequiresWeakspotMark: seed.madnessRequiresWeakspotMark ?? false,
+    skillMaxLevels: seed.skillMaxLevels,
     trait: overrides.trait ?? `${role}のコンビクト。与ダメージが5%アップし、…`,
     traitDamagePct: seed.traitDmgPct ?? 0,
     traitCoreBrokenDamagePct: seed.traitCoreBrokenDmgPct ?? 0,
@@ -140,6 +165,7 @@ export function defineCharacter(seed: CharacterSeed): Character {
       `${name}はスキル範囲内の全ての敵に自身のATKの{v}の物理ダメージを与える。`,
     passive: seed.passive,
     passiveBuff: seed.passiveBuff,
+    passiveBuffAffectsAttack: seed.passiveBuffAffectsAttack ?? true,
     passiveBuffTargetMode: seed.passiveBuffTargetMode ?? 'select-one',
     passiveText:
       overrides.passiveText ??
@@ -147,6 +173,8 @@ export function defineCharacter(seed: CharacterSeed): Character {
     passive2: seed.passive2,
     passive2TargetMode: seed.passive2TargetMode ?? 'select-one',
     passive2Buff: seed.passive2Buff,
+    passive2BuffAffectsAttack: seed.passive2BuffAffectsAttack ?? true,
+    passive2AdditionalBuff: seed.passive2AdditionalBuff,
     passive2Text: overrides.passive2Text ?? `${name}は戦闘開始時、指定した味方のATKが{b}アップする。`,
     combat: seed.combat ?? {},
     damageComponents,
@@ -159,7 +187,7 @@ export function defineCharacter(seed: CharacterSeed): Character {
       { name: '解放', text: '必殺技のクールタイムが2秒短縮する' },
     ],
     exclusive: { ...seed.exclusive, text: overrides.exclusiveText ?? '被ダメージが{v}ダウン' },
-    rebuild: buildRebuild(name, ...seed.rebuildUlts),
+    rebuild,
   }
 }
 

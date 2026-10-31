@@ -27,6 +27,8 @@ export type SlotState = {
   passive2Target: number
   defeatedEnemyCount: number
   singleEnemyInRange: boolean
+  weakspotMarked: boolean
+  weakspotRemovalSuccesses: number
   riftStacks: number
   sigils: SigilSlot[]
   /** 適用中の再構築の行ID */
@@ -83,6 +85,8 @@ export function createEmptySlot(slotIndex: number): SlotState {
     passive2Target: slotIndex,
     defeatedEnemyCount: 0,
     singleEnemyInRange: false,
+    weakspotMarked: false,
+    weakspotRemovalSuccesses: 0,
     riftStacks: 0,
     sigils: [0, 1, 2].map(() => ({ setId: null, lv: 1 })),
     rebuild: [],
@@ -105,10 +109,14 @@ function resolvePartyBuffs(slots: SlotState[]) {
   slots.forEach((slot, index) => {
     const character = slot.characterId ? CHARACTER_MAP[slot.characterId] : null
     if (!character) return
-    const passiveBuff = valueAt(character.passiveBuff, slot.passiveLv)
-    const passive2Buff = character.passive2Buff
-      ? valueAt(character.passive2Buff, slot.passive2Lv)
-      : valueAt(character.passive2, slot.passive2Lv)
+    const passiveBuff = character.passiveBuffAffectsAttack
+      ? valueAt(character.passiveBuff, slot.passiveLv)
+      : 0
+    const passive2Buff = character.passive2BuffAffectsAttack
+      ? character.passive2Buff
+        ? valueAt(character.passive2Buff, slot.passive2Lv)
+        : valueAt(character.passive2, slot.passive2Lv)
+      : 0
     resolveTargets(character.passiveBuffTargetMode, slot.passiveTarget, index).forEach((target) => {
       buffs[target] += passiveBuff
     })
@@ -164,7 +172,9 @@ function calculateSlotResult(
 
   const dmgBonus =
     character.traitDamagePct +
-    (slot.madness ? character.madness.dmgPct : 0) +
+    (slot.madness && (!character.madnessRequiresWeakspotMark || slot.weakspotMarked)
+      ? character.madness.dmgPct
+      : 0) +
     mods.dmgPct
   const dmgAmp = 1 + dmgBonus
   const ultAmp = (1 + mods.ultDmgPct) * mods.ultimateScale
@@ -188,7 +198,20 @@ function calculateSlotResult(
     passive: slot.passiveLv,
     passive2: slot.passive2Lv,
   }
-  const damageComponents = resolveDamageComponents(character.damageComponents, skillLevels)
+  const damageComponents = resolveDamageComponents(
+    character.damageComponents.filter((component) => component.calculationEnabled !== false),
+    skillLevels,
+    {
+      'weakspot-removal-successes': slot.weakspotRemovalSuccesses,
+    },
+  ).map((component) =>
+    component.id === 'focus'
+      ? {
+          ...component,
+          multiplier: 1 + (character.exclusive.valuesByLevel?.[slot.exclusiveLv] ?? 0),
+        }
+      : component,
+  )
   const exclusiveCoefficient = character.combat.exclusiveDamageCoefficients?.[slot.exclusiveLv]
   if (slot.exclusiveLv > 0 && exclusiveCoefficient !== undefined) {
     damageComponents.push({
@@ -198,6 +221,8 @@ function calculateSlotResult(
       label: '専属刻印 必殺技追加攻撃',
       category: 'skill',
       damageType: 'physical',
+      damageAttribute: null,
+      damageAttackKind: 'skill-damage',
       hitCount: 1,
       sourceKind: 'attack-coefficient',
       coefficientPerHit: exclusiveCoefficient,
@@ -241,7 +266,7 @@ function calculateSlotResult(
       physicalDefensePenetrationPct:
         character.combat.physicalDefensePenetrationPct ??
         (slot.madness ? character.combat.madnessPhysicalDefensePenetrationPct : 0),
-    }),
+    }).filter((component) => component.hitCount > 0),
     effects: resolveCharacterEffects(character.effects, skillLevels),
     sigilStats: {
       atkPct: sigilStats.atkPct,

@@ -20,7 +20,6 @@ import { SigilSelectModal, SigilSetModal } from './sigil-modals'
 type MemberOption = { slotIndex: number; name: string }
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i)
-const SKILL_LEVELS = range(1, MAX_SKILL_LEVEL)
 const SHACKLE_LEVELS = range(0, MAX_SHACKLE)
 const SIGIL_LEVELS = range(1, MAX_SIGIL_LEVEL)
 
@@ -129,7 +128,13 @@ function FilledSlot({
   const rebuildApplied = slot.rebuild.length > 0
   const ultimateName = currentUltimateName(character, slot.rebuild)
 
-  const targetSelect = (id: string, label: string, value: number, key: 'passiveTarget' | 'passive2Target') => (
+  const targetSelect = (
+    id: string,
+    label: string,
+    value: number,
+    key: 'passiveTarget' | 'passive2Target',
+    selectionLabel?: string,
+  ) => (
     <div className="flex min-w-0 items-center gap-1.5">
       <span className="shrink-0 text-xs text-muted-foreground">{'自 ⇒'}</span>
       <label htmlFor={id} className="sr-only">
@@ -147,6 +152,9 @@ function FilledSlot({
           </option>
         ))}
       </select>
+      {selectionLabel && (
+        <span className="shrink-0 text-[10px] text-accent">{selectionLabel}</span>
+      )}
     </div>
   )
 
@@ -251,6 +259,39 @@ function FilledSlot({
               />
             </LabeledField>
           )}
+          {character.id === 'bianca' && (
+            <>
+              <label className="col-span-2 flex min-h-9 cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={slot.weakspotMarked}
+                  onChange={(event) => onChange({ weakspotMarked: event.target.checked })}
+                  className="size-4 accent-primary"
+                />
+                敵に[破綻]マークあり（狂瞳深化の対象）
+              </label>
+              <LabeledField id={`${idPrefix}-weakspot-removals`} label="破綻マーク消去成功数">
+                <input
+                  id={`${idPrefix}-weakspot-removals`}
+                  type="number"
+                  min={0}
+                  max={8}
+                  step={1}
+                  inputMode="numeric"
+                  value={slot.weakspotRemovalSuccesses}
+                  onChange={(event) =>
+                    onChange({
+                      weakspotRemovalSuccesses: Math.max(
+                        0,
+                        Math.min(8, Math.floor(Number(event.target.value) || 0)),
+                      ),
+                    })
+                  }
+                  className={`${fieldClass} text-right`}
+                />
+              </LabeledField>
+            </>
+          )}
           {character.id === 'zoya' && slot.shackle >= 3 && (
             <label className="col-span-2 flex min-h-9 cursor-pointer items-center gap-2 text-xs text-muted-foreground">
               <input
@@ -269,6 +310,7 @@ function FilledSlot({
             id={`${idPrefix}-normal`}
             label="通常Lv"
             value={slot.normalLv}
+            maxLevel={character.skillMaxLevels?.normal ?? MAX_SKILL_LEVEL}
             onChange={(v) => onChange({ normalLv: v })}
             target={<TargetText />}
           />
@@ -276,6 +318,7 @@ function FilledSlot({
             id={`${idPrefix}-ult`}
             label="必殺Lv"
             value={slot.ultimateLv}
+            maxLevel={character.skillMaxLevels?.ultimate ?? MAX_SKILL_LEVEL}
             onChange={(v) => onChange({ ultimateLv: v })}
             target={<TargetText />}
           />
@@ -283,14 +326,16 @@ function FilledSlot({
             id={`${idPrefix}-passive`}
             label="パッシブ1Lv"
             value={slot.passiveLv}
+            maxLevel={character.skillMaxLevels?.passive ?? MAX_SKILL_LEVEL}
             onChange={(v) => onChange({ passiveLv: v })}
             target={
               character.passiveBuffTargetMode === 'select-one'
                 ? targetSelect(
                     `${idPrefix}-passive-target`,
-                    'パッシブ1バフ対象',
+                    character.id === 'margaret' ? '護衛者' : 'パッシブ1バフ対象',
                     slot.passiveTarget,
                     'passiveTarget',
+                    character.id === 'margaret' ? '護衛者' : undefined,
                   )
                 : <TargetText mode={character.passiveBuffTargetMode} />
             }
@@ -299,6 +344,7 @@ function FilledSlot({
             id={`${idPrefix}-passive2`}
             label="パッシブ2Lv"
             value={slot.passive2Lv}
+            maxLevel={character.skillMaxLevels?.passive2 ?? MAX_SKILL_LEVEL}
             onChange={(v) => onChange({ passive2Lv: v })}
             target={
               character.passive2TargetMode === 'select-one'
@@ -362,30 +408,32 @@ function FilledSlot({
           </ul>
         </section>
 
-        <section aria-label="再構築" className="flex items-center gap-3 p-4">
-          <span className="text-sm font-bold">再構築</span>
-          <button
-            type="button"
-            onClick={() => setRebuildOpen(true)}
-            className={`relative size-11 shrink-0 overflow-hidden border transition hover:border-primary hover:shadow-[0_0_16px_-4px_var(--primary)] ${
-              rebuildApplied ? 'border-primary' : 'border-border'
-            }`}
-          >
-            <Image src="/rebuild-icon.png" alt="" fill sizes="44px" className="object-cover" />
-            <span className="sr-only">再構築を設定</span>
-          </button>
-          <div className="min-w-0">
-            {rebuildApplied && (
-              <span className="mb-0.5 inline-block bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
-                適用中
-              </span>
-            )}
-            <p className="truncate text-sm">
-              <span className={rebuildApplied ? 'font-bold' : 'text-muted-foreground'}>{ultimateName}</span>
-              <span className="ml-2 text-xs text-muted-foreground">{'自 ⇒ 自'}</span>
-            </p>
-          </div>
-        </section>
+        {character.rebuild.length > 0 && (
+          <section aria-label="再構築" className="flex items-center gap-3 p-4">
+            <span className="text-sm font-bold">再構築</span>
+            <button
+              type="button"
+              onClick={() => setRebuildOpen(true)}
+              className={`relative size-11 shrink-0 overflow-hidden border transition hover:border-primary hover:shadow-[0_0_16px_-4px_var(--primary)] ${
+                rebuildApplied ? 'border-primary' : 'border-border'
+              }`}
+            >
+              <Image src="/rebuild-icon.png" alt="" fill sizes="44px" className="object-cover" />
+              <span className="sr-only">再構築を設定</span>
+            </button>
+            <div className="min-w-0">
+              {rebuildApplied && (
+                <span className="mb-0.5 inline-block bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
+                  適用中
+                </span>
+              )}
+              <p className="truncate text-sm">
+                <span className={rebuildApplied ? 'font-bold' : 'text-muted-foreground'}>{ultimateName}</span>
+                <span className="ml-2 text-xs text-muted-foreground">{'自 ⇒ 自'}</span>
+              </p>
+            </div>
+          </section>
+        )}
       </div>
 
       <InfoModal open={infoOpen} onClose={() => setInfoOpen(false)} character={character} slot={slot} />
@@ -405,16 +453,18 @@ function FilledSlot({
         }}
         onClose={() => setSigilPart(null)}
       />
-      <RebuildModal
-        open={rebuildOpen}
-        onClose={() => setRebuildOpen(false)}
-        character={character}
-        applied={slot.rebuild}
-        onApply={(ids) => {
-          onChange({ rebuild: ids })
-          setRebuildOpen(false)
-        }}
-      />
+      {character.rebuild.length > 0 && (
+        <RebuildModal
+          open={rebuildOpen}
+          onClose={() => setRebuildOpen(false)}
+          character={character}
+          applied={slot.rebuild}
+          onApply={(ids) => {
+            onChange({ rebuild: ids })
+            setRebuildOpen(false)
+          }}
+        />
+      )}
     </>
   )
 }
@@ -468,12 +518,14 @@ function SkillRow({
   id,
   label,
   value,
+  maxLevel,
   onChange,
   target,
 }: {
   id: string
   label: string
   value: number
+  maxLevel: number
   onChange: (value: number) => void
   target: React.ReactNode
 }) {
@@ -482,7 +534,7 @@ function SkillRow({
       <label htmlFor={id} className="text-sm">
         {label}
       </label>
-      <NumberSelect id={id} value={value} options={SKILL_LEVELS} onChange={onChange} />
+      <NumberSelect id={id} value={value} options={range(1, maxLevel)} onChange={onChange} />
       <div className="min-w-0">{target}</div>
     </div>
   )

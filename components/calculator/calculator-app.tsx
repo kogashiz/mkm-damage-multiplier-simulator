@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CHARACTER_MAP } from '@/lib/characters'
+import { CHARACTER_MAP, MAX_SKILL_LEVEL } from '@/lib/characters'
 import {
   DEFAULT_ENEMY_SETTINGS,
   SLOT_COUNT,
@@ -59,6 +59,19 @@ export function CalculatorApp() {
               characterId,
               atk: s.characterId ? s.atk : String(character.defaultAtk),
               exclusiveLv: s.characterId === characterId ? s.exclusiveLv : 0,
+              normalLv: Math.min(s.normalLv, character.skillMaxLevels?.normal ?? MAX_SKILL_LEVEL),
+              ultimateLv: Math.min(
+                s.ultimateLv,
+                character.skillMaxLevels?.ultimate ?? MAX_SKILL_LEVEL,
+              ),
+              passiveLv: Math.min(
+                s.passiveLv,
+                character.skillMaxLevels?.passive ?? MAX_SKILL_LEVEL,
+              ),
+              passive2Lv: Math.min(
+                s.passive2Lv,
+                character.skillMaxLevels?.passive2 ?? MAX_SKILL_LEVEL,
+              ),
               rebuild: s.characterId === characterId ? s.rebuild : [],
             }
           : s,
