@@ -1,4 +1,9 @@
 import { buildRebuild, type RebuildRow } from './rebuild'
+import {
+  createStandardDamageComponents,
+  type CharacterEffect,
+  type DamageComponent,
+} from './damage-model'
 
 export type CharacterClass = 'fury' | 'umbra' | 'endura'
 
@@ -44,6 +49,8 @@ export type Character = {
   passive2: number[]
   passive2TargetMode: BuffTargetMode
   passive2Text: string
+  damageComponents: DamageComponent[]
+  effects: CharacterEffect[]
   shackles: { name: string; text: string }[]
   exclusive: Scaling & { text: string }
   rebuild: RebuildRow[]
@@ -58,6 +65,8 @@ type CharacterSeed = Pick<Character, 'id' | 'name' | 'className' | 'image' | 'de
   passiveBuffTargetMode?: BuffTargetMode
   passive2: number[]
   passive2TargetMode?: BuffTargetMode
+  damageComponents?: DamageComponent[]
+  effects?: CharacterEffect[]
   madnessDmgPct: number
   exclusive: Scaling
   rebuildUlts: [string, string]
@@ -74,6 +83,8 @@ type CharacterSeed = Pick<Character, 'id' | 'name' | 'className' | 'image' | 'de
 function defineCharacter(seed: CharacterSeed): Character {
   const { name, overrides = {} } = seed
   const role = CLASS_LABELS[seed.className]
+  const damageComponents =
+    seed.damageComponents ?? createStandardDamageComponents(seed.normal, seed.ultimate, seed.passive)
   return {
     id: seed.id,
     name,
@@ -101,6 +112,8 @@ function defineCharacter(seed: CharacterSeed): Character {
     passive2: seed.passive2,
     passive2TargetMode: seed.passive2TargetMode ?? 'select-one',
     passive2Text: overrides.passive2Text ?? `${name}は戦闘開始時、指定した味方のATKが{b}アップする。`,
+    damageComponents,
+    effects: seed.effects ?? [],
     shackles: overrides.shackles ?? [
       { name: '転覆', text: '必殺技の継続時間が5秒延長する' },
       { name: '枷共鳴 I', text: '通常攻撃ダメージが5%アップする' },
@@ -116,6 +129,11 @@ function defineCharacter(seed: CharacterSeed): Character {
 /**
  * サンプルデータ。係数とテキストは計算フロー確認用の仮の値です。
  */
+const ZOYA_NORMAL_COEFFICIENTS = [0.83, 0.89, 0.95, 1.01, 1.08, 1.15, 1.23, 1.31, 1.4, 1.5]
+const ZOYA_ULTIMATE_COEFFICIENTS = [5, 5.34, 5.6, 6.08, 6.5, 6.93, 7.4, 7.9, 8.43, 9]
+const ZOYA_ENHANCED_NORMAL_FIRST_SECOND = [2.49, 2.66, 2.84, 3.03, 3.24, 3.46, 3.69, 3.94, 4.21, 4.49]
+const ZOYA_ENHANCED_NORMAL_THIRD = [1.14, 1.22, 1.3, 1.39, 1.48, 1.58, 1.69, 1.81, 1.93, 2.06]
+
 export const CHARACTERS: Character[] = [
   defineCharacter({
     id: 'zoya',
@@ -123,14 +141,101 @@ export const CHARACTERS: Character[] = [
     className: 'fury',
     image: '/characters/zoya.png',
     defaultAtk: 100,
-    normal: [0.83, 0.89, 0.95, 1.01, 1.08, 1.15, 1.23, 1.31, 1.40, 1.50],
-    ultimate: linearLevels(5.0, 0.5),
+    normal: ZOYA_NORMAL_COEFFICIENTS,
+    ultimate: ZOYA_ULTIMATE_COEFFICIENTS,
     ultimateName: '怒りの軍団',
     passive: linearLevels(0.8, 0.08),
     passiveBuff: linearLevels(0.1, 0.02),
     passiveBuffTargetMode: 'select-one',
     passive2: linearLevels(0.05, 0.01),
     passive2TargetMode: 'self',
+    damageComponents: [
+      {
+        id: 'normal',
+        skill: 'normal',
+        trigger: 'normal-attack',
+        label: '通常攻撃',
+        category: 'normal',
+        damageType: 'physical',
+        hitCount: 1,
+        source: {
+          kind: 'attack-coefficient',
+          levelSource: 'normal',
+          coefficientsByLevel: ZOYA_NORMAL_COEFFICIENTS,
+        },
+      },
+      {
+        id: 'ultimate',
+        skill: 'ultimate',
+        trigger: 'ultimate',
+        label: '必殺技発動',
+        category: 'skill',
+        damageType: 'physical',
+        hitCount: 1,
+        source: {
+          kind: 'attack-coefficient',
+          levelSource: 'ultimate',
+          coefficientsByLevel: ZOYA_ULTIMATE_COEFFICIENTS,
+        },
+      },
+      {
+        id: 'ultimate-enhanced-normal-first-second',
+        skill: 'ultimate',
+        trigger: 'ultimate',
+        label: '強化通常攻撃 第1・2撃',
+        category: 'normal',
+        damageType: 'physical',
+        hitCount: 2,
+        activeWindowSeconds: 15,
+        source: {
+          kind: 'attack-coefficient',
+          levelSource: 'ultimate',
+          coefficientsByLevel: ZOYA_ENHANCED_NORMAL_FIRST_SECOND,
+        },
+      },
+      {
+        id: 'ultimate-enhanced-normal-third',
+        skill: 'ultimate',
+        trigger: 'ultimate',
+        label: '強化通常攻撃 第3撃',
+        category: 'normal',
+        damageType: 'physical',
+        hitCount: 3,
+        activeWindowSeconds: 15,
+        source: {
+          kind: 'attack-coefficient',
+          levelSource: 'ultimate',
+          coefficientsByLevel: ZOYA_ENHANCED_NORMAL_THIRD,
+        },
+      },
+      {
+        id: 'passive1-current-hp',
+        skill: 'passive',
+        trigger: 'normal-attack',
+        label: 'パッシブ1 追加ダメージ',
+        category: 'special',
+        damageType: 'defense-ignoring',
+        hitCount: 1,
+        activationCondition: { kind: 'after-normal-attacks', count: 2 },
+        source: {
+          kind: 'current-enemy-hp',
+          levelSource: 'passive',
+          hpRatio: 0.02,
+          maxAttackCoefficientsByLevel: [0.3, 0.314, 0.328, 0.343, 0.359, 0.376, 0.393, 0.411, 0.43, 0.45],
+        },
+      },
+    ],
+    effects: [
+      {
+        id: 'passive2-attack-speed',
+        skill: 'passive2',
+        kind: 'attack-speed-up',
+        trigger: 'after-consecutive-normal-attack-damage',
+        values: [0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.02],
+        durationSeconds: 4,
+        maxStacks: 15,
+      },
+    ],
     madnessDmgPct: 0.1,
     exclusive: { base: 0.25, perLevel: 0.025 },
     rebuildUlts: ['怒りの軍臨', '疾鋒の軍臨'],

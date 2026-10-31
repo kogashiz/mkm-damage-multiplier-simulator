@@ -1,12 +1,20 @@
 import Image from 'next/image'
 import { ArrowLeft } from 'lucide-react'
-import type { SlotResult } from '@/lib/calc'
+import type { EnemySettings, SlotResult } from '@/lib/calc'
 import { CLASS_LABELS } from '@/lib/characters'
 import { AppHeader } from './app-header'
 
 const fmt = (n: number) => n.toFixed(2)
 
-export function ResultView({ results, onClose }: { results: SlotResult[]; onClose: () => void }) {
+export function ResultView({
+  results,
+  enemy,
+  onClose,
+}: {
+  results: SlotResult[]
+  enemy: EnemySettings
+  onClose: () => void
+}) {
   return (
     <div className="min-h-dvh">
       <AppHeader
@@ -25,6 +33,17 @@ export function ResultView({ results, onClose }: { results: SlotResult[]; onClos
 
       <main className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6">
         <h2 className="sr-only">計算結果</h2>
+        <div className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-2 border border-border bg-card px-4 py-3 text-sm">
+          <span>
+            敵 DEF <strong className="font-mono">{fmt(enemy.def)}</strong>
+          </span>
+          <span>
+            敵 MDF <strong className="font-mono">{fmt(enemy.mdf)}</strong>
+          </span>
+          <span className={enemy.isBreak ? 'font-bold text-primary' : 'text-muted-foreground'}>
+            {enemy.isBreak ? 'Break中' : 'Breakなし'}
+          </span>
+        </div>
         <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((r) => (
             <li key={r.slotIndex}>
@@ -32,9 +51,6 @@ export function ResultView({ results, onClose }: { results: SlotResult[]; onClos
             </li>
           ))}
         </ul>
-        <p className="mt-8 text-xs text-muted-foreground text-pretty">
-          {'※ 倍率 = スキル係数 × (実効ATK ÷ 入力ATK) × (1 + 与ダメージ増加)。実効ATK = (ATK + 再構築ATK) × (1 + バフ + 刻印ATK% + 再構築ATK%)。係数はサンプル値です。'}
-        </p>
       </main>
     </div>
   )
@@ -91,6 +107,41 @@ function ResultCard({ result }: { result: SlotResult }) {
                 {fmt(row.value)}
               </span>
               <span className="text-sm">倍</span>
+            </dd>
+          </div>
+        ))}
+        {result.damageComponents.map((component) => (
+          <div key={component.id} className="flex items-baseline justify-between gap-3 py-3">
+            <dt className="text-sm text-muted-foreground">{component.label}</dt>
+            <dd className="text-right">
+              {component.sourceKind === 'current-enemy-hp' ? (
+                <span className="text-sm text-muted-foreground">
+                  敵HP {(component.hpRatio * 100).toFixed(0)}%（ATK上限{' '}
+                  {fmt(component.maxAttackCoefficient)}倍）
+                </span>
+              ) : component.damageTotal !== null && component.damagePerHit !== null ? (
+                <>
+                  <p className="mb-1 text-xs text-muted-foreground">
+                    係数 {fmt(component.coefficientPerHit * 100)}%
+                    {component.hitCount > 1 &&
+                      `（合計 ${fmt(component.coefficientTotal * 100)}%）`}
+                  </p>
+                  {component.hitCount > 1 && (
+                    <span className="mr-2 text-xs text-muted-foreground">
+                      {component.hitCount}H 合計
+                    </span>
+                  )}
+                  <span className="font-mono text-xl font-bold text-primary [text-shadow:0_0_12px_color-mix(in_oklab,var(--primary)_60%,transparent)]">
+                    {fmt(component.damageTotal)}
+                  </span>
+                  <span className="ml-1 text-xs">ダメージ</span>
+                  {component.hitCount > 1 && component.damagePerHit !== null && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      1H {fmt(component.damagePerHit)}
+                    </p>
+                  )}
+                </>
+              ) : null}
             </dd>
           </div>
         ))}

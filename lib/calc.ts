@@ -1,4 +1,12 @@
 import { CHARACTER_MAP, coefAt, valueAt, type BuffTargetMode, type Character } from './characters'
+import {
+  calculateDamageComponents,
+  resolveCharacterEffects,
+  resolveDamageComponents,
+  type CalculatedDamageComponent,
+  type ResolvedCharacterEffect,
+  type SkillLevels,
+} from './damage-model'
 import { summarizeRebuild } from './rebuild'
 import { activeSet, sigilStatAt, type SigilPart } from './sigils'
 
@@ -33,6 +41,20 @@ export type SlotResult = {
   normal: number
   ultimate: number
   passive: number
+  damageComponents: CalculatedDamageComponent[]
+  effects: ResolvedCharacterEffect[]
+}
+
+export type EnemySettings = {
+  def: number
+  mdf: number
+  isBreak: boolean
+}
+
+export const DEFAULT_ENEMY_SETTINGS: EnemySettings = {
+  def: 0,
+  mdf: 0,
+  isBreak: false,
 }
 
 export const SLOT_COUNT = 6
@@ -59,7 +81,10 @@ export function currentUltimateName(character: Character, rebuild: string[]) {
   return summarizeRebuild(character.rebuild, rebuild).mods.ultimateName ?? character.ultimateName
 }
 
-export function calculateParty(slots: SlotState[]): SlotResult[] {
+export function calculateParty(
+  slots: SlotState[],
+  enemy: EnemySettings = DEFAULT_ENEMY_SETTINGS,
+): SlotResult[] {
   const buffs = new Array<number>(slots.length).fill(0)
   const resolveTargets = (mode: BuffTargetMode, selectedTarget: number, self: number) => {
     if (mode === 'self') return [self]
@@ -96,6 +121,14 @@ export function calculateParty(slots: SlotState[]): SlotResult[] {
     const dmgBonus = (slot.madness ? character.madness.dmgPct : 0) + mods.dmgPct + (set?.setEffect.dmgPct ?? 0)
     const dmgAmp = 1 + dmgBonus
     const ultAmp = (1 + mods.ultDmgPct + (set?.setEffect.ultDmgPct ?? 0)) * mods.ultimateScale
+    const skillLevels: SkillLevels = {
+      normal: slot.normalLv,
+      ultimate: slot.ultimateLv,
+      passive: slot.passiveLv,
+      passive2: slot.passive2Lv,
+    }
+
+    const damageComponents = resolveDamageComponents(character.damageComponents, skillLevels)
 
     return [
       {
@@ -109,6 +142,15 @@ export function calculateParty(slots: SlotState[]): SlotResult[] {
         normal: valueAt(character.normal, slot.normalLv) * atkRatio * dmgAmp,
         ultimate: valueAt(character.ultimate, slot.ultimateLv) * atkRatio * dmgAmp * ultAmp,
         passive: valueAt(character.passive, slot.passiveLv) * atkRatio * dmgAmp,
+        damageComponents: calculateDamageComponents(damageComponents, {
+          finalAttack: effectiveAtk,
+          enemyDef: enemy.def,
+          enemyMdf: enemy.mdf,
+          isBreak: enemy.isBreak,
+          damageMultiplier: dmgAmp,
+          ultimateMultiplier: ultAmp,
+        }),
+        effects: resolveCharacterEffects(character.effects, skillLevels),
       },
     ]
   })
