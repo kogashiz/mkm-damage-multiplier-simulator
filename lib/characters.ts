@@ -16,6 +16,8 @@ export const MAX_EXCLUSIVE_LEVEL = 5
 
 type Scaling = { base: number; perLevel: number }
 
+export type BuffTargetMode = 'self' | 'all' | 'select-one'
+
 const linearLevels = (base: number, perLevel: number) =>
   Array.from({ length: MAX_SKILL_LEVEL }, (_, index) => base + perLevel * index)
 
@@ -37,8 +39,10 @@ export type Character = {
   ultimateText: string
   passive: number[]
   passiveBuff: number[]
+  passiveBuffTargetMode: BuffTargetMode
   passiveText: string
   passive2: number[]
+  passive2TargetMode: BuffTargetMode
   passive2Text: string
   shackles: { name: string; text: string }[]
   exclusive: Scaling & { text: string }
@@ -51,7 +55,9 @@ type CharacterSeed = Pick<Character, 'id' | 'name' | 'className' | 'image' | 'de
   ultimateName: string
   passive: number[]
   passiveBuff: number[]
+  passiveBuffTargetMode?: BuffTargetMode
   passive2: number[]
+  passive2TargetMode?: BuffTargetMode
   madnessDmgPct: number
   exclusive: Scaling
   rebuildUlts: [string, string]
@@ -88,10 +94,12 @@ function defineCharacter(seed: CharacterSeed): Character {
       `${name}はスキル範囲内の全ての敵に自身のATKの{v}の物理ダメージを与える。`,
     passive: seed.passive,
     passiveBuff: seed.passiveBuff,
+    passiveBuffTargetMode: seed.passiveBuffTargetMode ?? 'select-one',
     passiveText:
       overrides.passiveText ??
       `${name}は自身のATK {v}の追加ダメージを与え、指定した味方のATKが{b}アップする。`,
     passive2: seed.passive2,
+    passive2TargetMode: seed.passive2TargetMode ?? 'select-one',
     passive2Text: overrides.passive2Text ?? `${name}は戦闘開始時、指定した味方のATKが{b}アップする。`,
     shackles: overrides.shackles ?? [
       { name: '転覆', text: '必殺技の継続時間が5秒延長する' },
@@ -120,7 +128,9 @@ export const CHARACTERS: Character[] = [
     ultimateName: '怒りの軍団',
     passive: linearLevels(0.8, 0.08),
     passiveBuff: linearLevels(0.1, 0.02),
+    passiveBuffTargetMode: 'select-one',
     passive2: linearLevels(0.05, 0.01),
+    passive2TargetMode: 'self',
     madnessDmgPct: 0.1,
     exclusive: { base: 0.25, perLevel: 0.025 },
     rebuildUlts: ['怒りの軍臨', '疾鋒の軍臨'],
@@ -145,7 +155,9 @@ export const CHARACTERS: Character[] = [
     ultimateName: '深淵の夜幕',
     passive: linearLevels(1.0, 0.1),
     passiveBuff: linearLevels(0.08, 0.015),
+    passiveBuffTargetMode: 'all',
     passive2: linearLevels(0.04, 0.01),
+    passive2TargetMode: 'select-one',
     madnessDmgPct: 0.12,
     exclusive: { base: 0.2, perLevel: 0.02 },
     rebuildUlts: ['永夜の顕現', '黒影の顕現'],

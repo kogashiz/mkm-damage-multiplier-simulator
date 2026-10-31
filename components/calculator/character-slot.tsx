@@ -9,6 +9,7 @@ import {
   MAX_EXCLUSIVE_LEVEL,
   MAX_SHACKLE,
   MAX_SKILL_LEVEL,
+  type BuffTargetMode,
 } from '@/lib/characters'
 import { currentUltimateName, type SigilSlot, type SlotState } from '@/lib/calc'
 import { MAX_SIGIL_LEVEL, SIGIL_PARTS, SIGIL_SET_MAP, type SigilPart } from '@/lib/sigils'
@@ -247,19 +248,32 @@ function FilledSlot({
             label="パッシブ1Lv"
             value={slot.passiveLv}
             onChange={(v) => onChange({ passiveLv: v })}
-            target={targetSelect(`${idPrefix}-passive-target`, 'パッシブ1バフ対象', slot.passiveTarget, 'passiveTarget')}
+            target={
+              character.passiveBuffTargetMode === 'select-one'
+                ? targetSelect(
+                    `${idPrefix}-passive-target`,
+                    'パッシブ1バフ対象',
+                    slot.passiveTarget,
+                    'passiveTarget',
+                  )
+                : <TargetText mode={character.passiveBuffTargetMode} />
+            }
           />
           <SkillRow
             id={`${idPrefix}-passive2`}
             label="パッシブ2Lv"
             value={slot.passive2Lv}
             onChange={(v) => onChange({ passive2Lv: v })}
-            target={targetSelect(
-              `${idPrefix}-passive2-target`,
-              'パッシブ2バフ対象',
-              slot.passive2Target,
-              'passive2Target',
-            )}
+            target={
+              character.passive2TargetMode === 'select-one'
+                ? targetSelect(
+                    `${idPrefix}-passive2-target`,
+                    'パッシブ2バフ対象',
+                    slot.passive2Target,
+                    'passive2Target',
+                  )
+                : <TargetText mode={character.passive2TargetMode} />
+            }
           />
         </section>
 
@@ -432,6 +446,6 @@ function SkillRow({
   )
 }
 
-function TargetText() {
-  return <span className="text-xs text-muted-foreground">{'自 ⇒ 自'}</span>
+function TargetText({ mode = 'self' }: { mode?: Exclude<BuffTargetMode, 'select-one'> }) {
+  return <span className="text-xs text-muted-foreground">{mode === 'self' ? '自 ⇒ 自' : '自 ⇒ 全員'}</span>
 }

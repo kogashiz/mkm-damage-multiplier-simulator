@@ -1,4 +1,4 @@
-import { CHARACTER_MAP, coefAt, valueAt, type Character } from './characters'
+import { CHARACTER_MAP, coefAt, valueAt, type BuffTargetMode, type Character } from './characters'
 import { summarizeRebuild } from './rebuild'
 import { activeSet, sigilStatAt, type SigilPart } from './sigils'
 
@@ -61,13 +61,23 @@ export function currentUltimateName(character: Character, rebuild: string[]) {
 
 export function calculateParty(slots: SlotState[]): SlotResult[] {
   const buffs = new Array<number>(slots.length).fill(0)
-  const resolveTarget = (target: number, self: number) => (slots[target]?.characterId ? target : self)
+  const resolveTargets = (mode: BuffTargetMode, selectedTarget: number, self: number) => {
+    if (mode === 'self') return [self]
+    if (mode === 'all') return slots.flatMap((slot, index) => (slot.characterId ? [index] : []))
+    return [slots[selectedTarget]?.characterId ? selectedTarget : self]
+  }
 
   slots.forEach((slot, index) => {
     const character = slot.characterId ? CHARACTER_MAP[slot.characterId] : null
     if (!character) return
-    buffs[resolveTarget(slot.passiveTarget, index)] += valueAt(character.passiveBuff, slot.passiveLv)
-    buffs[resolveTarget(slot.passive2Target, index)] += valueAt(character.passive2, slot.passive2Lv)
+    const passiveBuff = valueAt(character.passiveBuff, slot.passiveLv)
+    const passive2Buff = valueAt(character.passive2, slot.passive2Lv)
+    resolveTargets(character.passiveBuffTargetMode, slot.passiveTarget, index).forEach((target) => {
+      buffs[target] += passiveBuff
+    })
+    resolveTargets(character.passive2TargetMode, slot.passive2Target, index).forEach((target) => {
+      buffs[target] += passive2Buff
+    })
   })
 
   return slots.flatMap((slot, index) => {
